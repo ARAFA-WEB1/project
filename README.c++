@@ -1,6 +1,22 @@
 from abc import ABC, abstractmethod
 from multipledispatch import dispatch
 import datetime
+# ---------------------- Currency Conversion ----------------------
+current_currency = "USD"
+currency_rates = {
+    "USD": 1.0,
+    "EGP": 50.0,
+    "KWD": 0.31,
+    "SAR": 3.75,
+    "JPY": 155.0,
+    "EUR": 0.93,
+    "GBP": 0.80,
+    "AED": 3.67,
+    "CNY": 7.23
+}
+
+def convert_price(price_usd):
+    return round(price_usd * currency_rates[current_currency], 2)
 
 # ---------------------- Exception Classes ----------------------
 class BookingException(Exception):
@@ -123,8 +139,7 @@ class Flight(BookingService):
     def book(self):
      print("Available Flights:")
      for idx, flight in enumerate(self.available_flights):
-        print(f"{idx+1}. {flight['from']} -> {flight['to']} | {flight['duration']} | ${flight['price']}")
-    
+        print(f"{idx+1}. {flight['from']} -> {flight['to']} | {flight['duration']} | {convert_price(flight['price'])} {current_currency}")
      choice = int(input("Choose a flight number: ")) - 1
      if choice not in range(len(self.available_flights)):
         raise InvalidInputException("Invalid choice.")
@@ -187,7 +202,7 @@ class Hotel(BookingService):
     def book(self):
         print("Available Hotels:")
         for idx, hotel in enumerate(self.hotels):
-            print(f"{idx+1}. {hotel['name']} | ${hotel['price']} per night")
+            print(f"{idx+1}. {hotel['name']} | {convert_price(hotel['price'])} {current_currency} per night")
         choice = int(input("Choose a hotel number: ")) - 1
         nights = int(input("Enter number of nights: "))
         date = input("Check-in date (YYYY-MM-DD): ")
@@ -220,15 +235,16 @@ class AirportTaxi(BookingService):
         return f"Taxi booked from {pickup} at {time}"
 
 # ---------------------- Currency Selector ----------------------
-def select_currency():
-    currencies = ["USD", "EUR", "EGP"]
+    currencies = ["USD", "EUR", "EGP", "AED", "INR", "JPY", "GBP", "SAR", "CAD", "AUD"]
     print("Available currencies:")
     for i, c in enumerate(currencies):
         print(f"{i+1}. {c}")
     choice = int(input("Select currency: "))
-    print(f"Currency set to {currencies[choice-1]}")
+    if 1 <= choice <= len(currencies):
+        print(f"Currency set to {currencies[choice-1]}")
+    else:
+        print("Invalid choice.")
 
-# ---------------------- Main Program ----------------------
 # ---------------------- Main Program ----------------------
 def main():
     system = BookingSystemSingleton.get_instance()
