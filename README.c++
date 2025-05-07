@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from multipledispatch import dispatch
 import datetime
+
 # ---------------------- Currency Conversion ----------------------
 current_currency = "USD"
 currency_rates = {
@@ -43,9 +44,25 @@ class BookingSystemSingleton:
             raise Exception("This class is a singleton!")
         else:
             BookingSystemSingleton._instance = self
-            self.users = {}
-            self.current_user = None
+            self._users = {}
+            self._current_user = None
             self.services = []
+
+    @property
+    def users(self):
+        return self._users
+
+    @users.setter
+    def users(self, value):
+        self._users = value
+
+    @property
+    def current_user(self):
+        return self._current_user
+
+    @current_user.setter
+    def current_user(self, user):
+        self._current_user = user
 
 # ---------------------- Proxy Pattern ----------------------
 class PaymentProxy:
@@ -86,8 +103,6 @@ class PaymentProxy:
                 if retry != 'y':
                     raise PaymentFailedException("Payment cancelled by user.")
 
-
-
 class RealPaymentService:
     def process(self):
         print("Payment processed successfully.")
@@ -103,12 +118,21 @@ class User:
     def __init__(self, username, password):
         if len(username) < 3 or len(password) < 6:
             raise InvalidInputException("Username or password too short.")
-        self.username = username
-        self.password = password
+        self._username = username
+        self._password = password
         self.bookings = []
+
+    @property
+    def username(self):
+        return self._username
+
+    @property
+    def password(self):
+        return self._password
 
     def add_booking(self, booking):
         self.bookings.append(booking)
+
 
 # ---------------------- Flights ----------------------
 class Flight(BookingService):
@@ -137,36 +161,35 @@ class Flight(BookingService):
         ]
 
     def book(self):
-     print("Available Flights:")
-     for idx, flight in enumerate(self.available_flights):
-        print(f"{idx+1}. {flight['from']} -> {flight['to']} | {flight['duration']} | {convert_price(flight['price'])} {current_currency}")
-     choice = int(input("Choose a flight number: ")) - 1
-     if choice not in range(len(self.available_flights)):
-        raise InvalidInputException("Invalid choice.")
+        print("Available Flights:")
+        for idx, flight in enumerate(self.available_flights):
+            print(f"{idx+1}. {flight['from']} -> {flight['to']} | {flight['duration']} | {convert_price(flight['price'])} {current_currency}")
+        choice = int(input("Choose a flight number: ")) - 1
+        if choice not in range(len(self.available_flights)):
+            raise InvalidInputException("Invalid choice.")
 
-     date = input("Enter your travel date (YYYY-MM-DD): ")
+        date = input("Enter your travel date (YYYY-MM-DD): ")
 
-    # Seat selection
-     if not hasattr(self, 'available_seats'):
-        self.available_seats = ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4", "C1", "C2"]
+        # Seat selection
+        if not hasattr(self, 'available_seats'):
+            self.available_seats = ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4", "C1", "C2"]
 
-     if not self.available_seats:
-        print("No available seats.")
-        return "Booking failed: No seats left."
+        if not self.available_seats:
+            print("No available seats.")
+            return "Booking failed: No seats left."
 
-     print(f"Available seats: {', '.join(self.available_seats)}")
-     seat = input("Choose your seat: ")
+        print(f"Available seats: {', '.join(self.available_seats)}")
+        seat = input("Choose your seat: ")
 
-     if seat not in self.available_seats:
-        print("Invalid or already booked seat.")
-        return "Booking failed: Seat unavailable."
+        if seat not in self.available_seats:
+            print("Invalid or already booked seat.")
+            return "Booking failed: Seat unavailable."
 
-     self.available_seats.remove(seat)
-     print("Booking flight...")
-     return f"Flight: {self.available_flights[choice]} on {date} Seat: {seat}"
+        self.available_seats.remove(seat)
+        print("Booking flight...")
+        return f"Flight: {self.available_flights[choice]} on {date} Seat: {seat}"
 
-     
-     def cancel(self, user, booking_detail):
+    def cancel(self, user, booking_detail):
         if booking_detail.startswith("Flight:"):
             print(f"Canceling flight booking: {booking_detail}")
             # Return seat to available seats
@@ -175,8 +198,6 @@ class Flight(BookingService):
                 self.available_seats.append(seat)
             return user.cancel_booking(booking_detail)
         return False
-
-
 
 # ---------------------- Hotels ----------------------
 class Hotel(BookingService):
@@ -208,7 +229,6 @@ class Hotel(BookingService):
         date = input("Check-in date (YYYY-MM-DD): ")
         return f"Hotel: {self.hotels[choice]['name']} for {nights} nights from {date}"
 
-
 # ---------------------- Car Rentals ----------------------
 class CarRental(BookingService):
     def book(self):
@@ -235,7 +255,7 @@ class AirportTaxi(BookingService):
         return f"Taxi booked from {pickup} at {time}"
 
 # ---------------------- Currency Selector ----------------------
-    def select_currency():
+def select_currency():
     global current_currency
     print("Available Currencies:")
     for idx, currency in enumerate(currency_rates.keys()):
@@ -247,12 +267,11 @@ class AirportTaxi(BookingService):
     else:
         print("Invalid currency choice.")
 
-
 # ---------------------- Main Program ----------------------
 def main():
     system = BookingSystemSingleton.get_instance()
     print("Welcome to AIRLINE Reservation System")
-    
+
     while True:
         action = input("1. Sign Up  2. Login  3. Exit: ")
         if action == '1':
@@ -287,12 +306,13 @@ def main():
     }
 
     booking_services = []  # To store the services each user books
-    
+    select_currency()
     while True:
+       
         print("\n--- Services ---")
         print("1. Book Flight\n2. Book Hotel\n3. Rent Car\n4. Book Attraction\n5. Book Airport Taxi\n6. Select Currency\n7. View My Bookings\n8. Cancel Booking\n9. Exit")
         choice = input("Choose a service: ")
-        
+
         if choice in services:
             try:
                 # Booking the service and adding the booking to the user's list
@@ -303,22 +323,22 @@ def main():
                 proxy = PaymentProxy(RealPaymentService())
                 proxy.pay(card, exp, cvv)
                 system.current_user.add_booking(details)
-                
+
                 # Add the service type to the booking_services list to track what was booked
                 booking_services.append((services[choice], details))  # Store service and details
-                
+
                 print("Booking successful!")
             except (InvalidInputException, PaymentFailedException) as e:
                 print(f"Error: {e}")
-        
+
         elif choice == '6':
             select_currency()
-        
+
         elif choice == '7':
             print("Your Bookings:")
             for idx, (service, booking) in enumerate(booking_services):
                 print(f"{idx + 1}. {booking}")
-        
+
         elif choice == '8':  # Cancel booking
             print("Your current bookings:")
             for idx, (service, booking) in enumerate(booking_services):
@@ -340,14 +360,11 @@ def main():
             else:
                 print("Invalid choice.")
 
-
-        
         elif choice == '9':
             break
-        
+
         else:
             print("Invalid choice.")
-
 
 if __name__ == "__main__":
     main()
