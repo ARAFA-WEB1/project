@@ -1,367 +1,334 @@
-#import tkinter as tk
-from tkinter import messagebox
-import sqlite3
-import hashlib
-import re
-from cryptography.fernet import Fernet
+from abc import ABC, abstractmethod
+from multipledispatch import dispatch
+import datetime
 
-# Generate a key for encryption (store this securely in a real application)
-key = Fernet.generate_key()
-cipher_suite = Fernet(key)
+# ---------------------- Exception Classes ----------------------
+class BookingException(Exception):
+    pass
 
-# Database Manager
-class DatabaseManager:
-    def __init__(self, db_name="airline_system.db"):
-        self.conn = sqlite3.connect(db_name)
-        self.cursor = self.conn.cursor()
-        self._initialize_tables()
+class InvalidInputException(BookingException):
+    pass
 
-    def _initialize_tables(self):
-        self.cursor.execute('''CREATE TABLE IF NOT EXISTS users (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                username TEXT UNIQUE,
-                                password TEXT,
-                                role TEXT)''')
+class PaymentFailedException(BookingException):
+    pass
 
-        self.cursor.execute('''CREATE TABLE IF NOT EXISTS flights (
-                                flight_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                flight_number TEXT,
-                                airline TEXT,
-                                origin TEXT,
-                                destination TEXT,
-                                departure_time TEXT,
-                                arrival_time TEXT,
-                                price REAL)''')
+# ---------------------- Singleton Pattern ----------------------
+class BookingSystemSingleton:
+    _instance = None
 
-        self.cursor.execute('''CREATE TABLE IF NOT EXISTS reservations (
-                                ticket_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                user_name TEXT,
-                                user_age INTEGER,
-                                flight_id INTEGER,
-                                seat TEXT,
-                                payment_status TEXT,
-                                card_number TEXT,
-                                FOREIGN KEY(flight_id) REFERENCES flights(flight_id))''')
-        self.conn.commit()
-
-    def execute_query(self, query, params=None):
-        self.cursor.execute(query, params or ())
-        self.conn.commit()
-
-    def fetch_one(self, query, params=None):
-        self.cursor.execute(query, params or ())
-        return self.cursor.fetchone()
-
-    def fetch_all(self, query, params=None):
-        self.cursor.execute(query, params or ())
-        return self.cursor.fetchall()
-
-    def close(self):
-        self.conn.close()
-
-
-# Password Validator
-class PasswordValidator:
     @staticmethod
-    def validate(password):
-        if len(password) >= 12 and re.search(r"[A-Z]", password) and re.search(r"[a-z]", password) and re.search(r"[0-9]", password) and re.search(r"[!@#$%^&*()]", password):
-            return "strong"
-        elif len(password) >= 8 and re.search(r"[A-Z]", password) and re.search(r"[a-z]", password) and re.search(r"[0-9]", password):
-            return "medium"
+    def get_instance():
+        if BookingSystemSingleton._instance is None:
+            BookingSystemSingleton()
+        return BookingSystemSingleton._instance
+
+    def __init__(self):
+        if BookingSystemSingleton._instance is not None:
+            raise Exception("This class is a singleton!")
         else:
-            return "weak"
+            BookingSystemSingleton._instance = self
+            self.users = {}
+            self.current_user = None
+            self.services = []
+
+# ---------------------- Proxy Pattern ----------------------
+class PaymentProxy:
+    def __init__(self, payment_service):
+        self.payment_service = payment_service
+
+    def pay(self, card_number=None, expiry=None, cvv=None):
+        while True:
+            try:
+                if card_number is None:
+                    card_number = input("Enter card number (16 digits): ")
+                if len(card_number) != 16 or not card_number.isdigit():
+                    raise PaymentFailedException("Invalid card number. Must be exactly 16 digits.")
+
+                if expiry is None:
+                    expiry = input("Enter expiry date (MM/YY): ")
+                try:
+                    month, year = map(int, expiry.split("/"))
+                except ValueError:
+                    raise PaymentFailedException("Expiry must be in MM/YY format using numbers.")
+
+                current_year = datetime.datetime.now().year % 100
+                if month < 1 or month > 12 or year < current_year:
+                    raise PaymentFailedException("Card expired or invalid expiry date.")
+
+                if cvv is None:
+                    cvv = input("Enter CVV (3 digits): ")
+                if not cvv.isdigit() or len(cvv) != 3:
+                    raise PaymentFailedException("CVV must be exactly 3 digits.")
+
+                self.payment_service.process()
+                break  # Exit loop on successful payment
+
+            except PaymentFailedException as e:
+                print(f"Payment error: {e}")
+                card_number, expiry, cvv = None, None, None
+                retry = input("Try again? (y/n): ").lower()
+                if retry != 'y':
+                    raise PaymentFailedException("Payment cancelled by user.")
 
 
-# Username Validator
-class UsernameValidator:
-    @staticmethod
-    def validate(username):
-        pattern = r"^(admin|user)_\d{4}$"
-        return bool(re.match(pattern, username))
 
+class RealPaymentService:
+    def process(self):
+        print("Payment processed successfully.")
 
-# Base User Class
+# ---------------------- Abstract Booking Service ----------------------
+class BookingService(ABC):
+    @abstractmethod
+    def book(self):
+        pass
+
+# ---------------------- User System ----------------------
 class User:
-    def __init__(self, username, password, role):
+    def __init__(self, username, password):
+        if len(username) < 3 or len(password) < 6:
+            raise InvalidInputException("Username or password too short.")
         self.username = username
-        self._password = self._hash_password(password)
-        self.role = role
+        self.password = password
+        self.bookings = []
 
-    def _hash_password(self, password):
-        return hashlib.sha256(password.encode()).hexdigest()
+    def add_booking(self, booking):
+        self.bookings.append(booking)
 
-    def verify_password(self, password):
-        return self._password == self._hash_password(password)
+# ---------------------- Flights ----------------------
+class Flight(BookingService):
+    def __init__(self):
+        self.available_flights = [
+            {"from": "Cairo", "to": "Paris", "duration": "4h", "price": 350},
+            {"from": "New York", "to": "London", "duration": "7h", "price": 550},
+            {"from": "Tokyo", "to": "Los Angeles", "duration": "11h", "price": 750},
+            {"from": "Dubai", "to": "Sydney", "duration": "14h", "price": 900},
+            {"from": "Paris", "to": "Rome", "duration": "2h", "price": 120},
+            {"from": "London", "to": "Berlin", "duration": "1.5h", "price": 110},
+            {"from": "Beijing", "to": "Bangkok", "duration": "4h", "price": 300},
+            {"from": "Toronto", "to": "Vancouver", "duration": "5h", "price": 320},
+            {"from": "New York", "to": "San Francisco", "duration": "6h", "price": 400},
+            {"from": "Mumbai", "to": "Dubai", "duration": "3h", "price": 200},
+            {"from": "Istanbul", "to": "Athens", "duration": "1.5h", "price": 150},
+            {"from": "Madrid", "to": "Lisbon", "duration": "1.2h", "price": 100},
+            {"from": "Seoul", "to": "Tokyo", "duration": "2.5h", "price": 250},
+            {"from": "Los Angeles", "to": "Honolulu", "duration": "6h", "price": 450},
+            {"from": "Chicago", "to": "Miami", "duration": "3h", "price": 280},
+            {"from": "Johannesburg", "to": "Cape Town", "duration": "2h", "price": 170},
+            {"from": "Singapore", "to": "Bali", "duration": "2.5h", "price": 230},
+            {"from": "Amsterdam", "to": "Oslo", "duration": "2h", "price": 140},
+            {"from": "Zurich", "to": "Vienna", "duration": "1.5h", "price": 160},
+            {"from": "Doha", "to": "Istanbul", "duration": "4.5h", "price": 300},
+        ]
+
+    def book(self):
+     print("Available Flights:")
+     for idx, flight in enumerate(self.available_flights):
+        print(f"{idx+1}. {flight['from']} -> {flight['to']} | {flight['duration']} | ${flight['price']}")
+    
+     choice = int(input("Choose a flight number: ")) - 1
+     if choice not in range(len(self.available_flights)):
+        raise InvalidInputException("Invalid choice.")
+
+     date = input("Enter your travel date (YYYY-MM-DD): ")
+
+    # Seat selection
+     if not hasattr(self, 'available_seats'):
+        self.available_seats = ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4", "C1", "C2"]
+
+     if not self.available_seats:
+        print("No available seats.")
+        return "Booking failed: No seats left."
+
+     print(f"Available seats: {', '.join(self.available_seats)}")
+     seat = input("Choose your seat: ")
+
+     if seat not in self.available_seats:
+        print("Invalid or already booked seat.")
+        return "Booking failed: Seat unavailable."
+
+     self.available_seats.remove(seat)
+     print("Booking flight...")
+     return f"Flight: {self.available_flights[choice]} on {date} Seat: {seat}"
+
+     
+     def cancel(self, user, booking_detail):
+        if booking_detail.startswith("Flight:"):
+            print(f"Canceling flight booking: {booking_detail}")
+            # Return seat to available seats
+            seat = booking_detail.split("Seat: ")[1]
+            if seat not in self.available_seats:
+                self.available_seats.append(seat)
+            return user.cancel_booking(booking_detail)
+        return False
 
 
-# Admin Class (Inherits from User)
-class Admin(User):
-    def __init__(self, username, password):
-        super().__init__(username, password, role="admin")
 
-    def add_flight(self, db, flight):
-        query = '''INSERT INTO flights (flight_number, airline, origin, destination, departure_time, arrival_time, price)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)'''
-        db.execute_query(query, flight)
+# ---------------------- Hotels ----------------------
+class Hotel(BookingService):
+    def __init__(self):
+        self.hotels = [
+            {"name": "Hilton Cairo", "price": 120},
+            {"name": "Marriott Paris", "price": 200},
+            {"name": "Sheraton New York", "price": 250},
+            {"name": "Four Seasons Tokyo", "price": 300},
+            {"name": "Ritz London", "price": 350},
+            {"name": "Grand Hyatt Dubai", "price": 220},
+            {"name": "The Oberoi Mumbai", "price": 180},
+            {"name": "Peninsula Hong Kong", "price": 330},
+            {"name": "Park Hyatt Sydney", "price": 310},
+            {"name": "Shangri-La Singapore", "price": 290},
+            {"name": "InterContinental Berlin", "price": 210},
+            {"name": "Mandarin Oriental Bangkok", "price": 270},
+            {"name": "The Langham Melbourne", "price": 240},
+            {"name": "Sofitel Rome Villa Borghese", "price": 260},
+            {"name": "JW Marriott Seoul", "price": 280},
+        ]
 
-    def edit_flight(self, db, flight_id, flight):
-        query = '''UPDATE flights SET flight_number = ?, airline = ?, origin = ?, destination = ?, departure_time = ?, arrival_time = ?, price = ?
-                   WHERE flight_id = ?'''
-        db.execute_query(query, (*flight, flight_id))
-
-    def delete_flight(self, db, flight_id):
-        query = "DELETE FROM flights WHERE flight_id = ?"
-        db.execute_query(query, (flight_id,))
-
-    def view_reservations(self, db):
-        query = "SELECT * FROM reservations"
-        return db.fetch_all(query)
-
-
-# Passenger Class (Inherits from User)
-class Passenger(User):
-    def __init__(self, username, password):
-        super().__init__(username, password, role="passenger")
-
-    def book_ticket(self, db, reservation):
-        query = '''INSERT INTO reservations (user_name, user_age, flight_id, seat, payment_status, card_number)
-                   VALUES (?, ?, ?, ?, ?, ?)'''
-        db.execute_query(query, reservation)
-
-    def view_flights(self, db, origin, destination):
-        query = "SELECT * FROM flights WHERE origin = ? AND destination = ?"
-        return db.fetch_all(query, (origin, destination))
+    def book(self):
+        print("Available Hotels:")
+        for idx, hotel in enumerate(self.hotels):
+            print(f"{idx+1}. {hotel['name']} | ${hotel['price']} per night")
+        choice = int(input("Choose a hotel number: ")) - 1
+        nights = int(input("Enter number of nights: "))
+        date = input("Check-in date (YYYY-MM-DD): ")
+        return f"Hotel: {self.hotels[choice]['name']} for {nights} nights from {date}"
 
 
-# Flight Class
-class Flight:
-    def __init__(self, flight_number, airline, origin, destination, departure_time, arrival_time, price):
-        self.flight_number = flight_number
-        self.airline = airline
-        self.origin = origin
-        self.destination = destination
-        self.departure_time = departure_time
-        self.arrival_time = arrival_time
-        self.price = price
+# ---------------------- Car Rentals ----------------------
+class CarRental(BookingService):
+    def book(self):
+        print("Available Cars: 1. Toyota Corolla, 2. BMW 3 Series")
+        car = input("Choose your car (1 or 2): ")
+        duration = input("Rental duration (days): ")
+        return f"Car Rental: {car}, for {duration} days"
 
+# ---------------------- Attractions ----------------------
+class Attraction(BookingService):
+    def book(self):
+        attractions = ["Eiffel Tower Tour", "Pyramids Tour", "London Eye"]
+        for idx, attr in enumerate(attractions):
+            print(f"{idx+1}. {attr}")
+        choice = int(input("Choose an attraction: ")) - 1
+        date = input("Date for attraction: ")
+        return f"Attraction: {attractions[choice]} on {date}"
 
-# Reservation Class
-class Reservation:
-    def __init__(self, user_name, user_age, flight_id, seat, payment_status, card_number):
-        self.user_name = user_name
-        self.user_age = user_age
-        self.flight_id = flight_id
-        self.seat = seat
-        self.payment_status = payment_status
-        self.card_number = cipher_suite.encrypt(card_number.encode()).decode()  # Encrypt card number
+# ---------------------- Airport Taxi ----------------------
+class AirportTaxi(BookingService):
+    def book(self):
+        pickup = input("Enter pickup location: ")
+        time = input("Enter pickup time (HH:MM): ")
+        return f"Taxi booked from {pickup} at {time}"
 
+# ---------------------- Currency Selector ----------------------
+def select_currency():
+    currencies = ["USD", "EUR", "EGP"]
+    print("Available currencies:")
+    for i, c in enumerate(currencies):
+        print(f"{i+1}. {c}")
+    choice = int(input("Select currency: "))
+    print(f"Currency set to {currencies[choice-1]}")
 
-# GUI Application
-class AirlineSystemApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Airline Reservation System")
-        self.db = DatabaseManager()
-        self.current_user = None
-        self.show_login_screen()
-
-    def show_login_screen(self):
-        self.clear_screen()
-        tk.Label(self.root, text="Username:").grid(row=0, column=0)
-        self.username_entry = tk.Entry(self.root)
-        self.username_entry.grid(row=0, column=1)
-
-        tk.Label(self.root, text="Password:").grid(row=1, column=0)
-        self.password_entry = tk.Entry(self.root, show="*")
-        self.password_entry.grid(row=1, column=1)
-
-        tk.Button(self.root, text="Login", command=self.login).grid(row=2, column=0)
-        tk.Button(self.root, text="Sign Up", command=self.show_signup_screen).grid(row=2, column=1)
-
-    def show_signup_screen(self):
-        self.clear_screen()
-        tk.Label(self.root, text="Username (format: admin_1234 or user_1234):").grid(row=0, column=0)
-        self.signup_username_entry = tk.Entry(self.root)
-        self.signup_username_entry.grid(row=0, column=1)
-
-        tk.Label(self.root, text="Password:").grid(row=1, column=0)
-        self.signup_password_entry = tk.Entry(self.root, show="*")
-        self.signup_password_entry.grid(row=1, column=1)
-
-        tk.Button(self.root, text="Sign Up", command=self.sign_up).grid(row=2, column=0)
-        tk.Button(self.root, text="Back", command=self.show_login_screen).grid(row=2, column=1)
-
-    def login(self):
-        username = self.username_entry.get()
-        password = self.password_entry.get()
-
-        user_data = self.db.fetch_one("SELECT * FROM users WHERE username = ?", (username,))
-        if user_data and User(user_data[1], user_data[2], user_data[3]).verify_password(password):
-            self.current_user = Admin(username, password) if user_data[3] == "admin" else Passenger(username, password)
-            self.show_dashboard()
-        else:
-            messagebox.showerror("Error", "Invalid credentials.")
-
-    def sign_up(self):
-        username = self.signup_username_entry.get()
-        if not UsernameValidator.validate(username):
-            messagebox.showerror("Error", "Invalid username format.")
+# ---------------------- Main Program ----------------------
+# ---------------------- Main Program ----------------------
+def main():
+    system = BookingSystemSingleton.get_instance()
+    print("Welcome to Booking.com Clone")
+    
+    while True:
+        action = input("1. Sign Up  2. Login  3. Exit: ")
+        if action == '1':
+            username = input("Username: ")
+            password = input("Password: ")
+            try:
+                user = User(username, password)
+                system.users[username] = user
+                print("Sign up successful.")
+            except InvalidInputException as e:
+                print(e)
+        elif action == '2':
+            username = input("Username: ")
+            password = input("Password: ")
+            user = system.users.get(username)
+            if user and user.password == password:
+                system.current_user = user
+                print("Login successful.")
+                break
+            else:
+                print("Invalid credentials.")
+        elif action == '3':
             return
 
-        password = self.signup_password_entry.get()
-        strength = PasswordValidator.validate(password)
-        messagebox.showinfo("Password Strength", f"Password strength: {strength}")
+    # Authenticated menu
+    services = {
+        '1': Flight(),
+        '2': Hotel(),
+        '3': CarRental(),
+        '4': Attraction(),
+        '5': AirportTaxi()
+    }
 
-        role = "admin" if username.startswith("admin") else "passenger"
-        user = Admin(username, password) if role == "admin" else Passenger(username, password)
+    booking_services = []  # To store the services each user books
+    
+    while True:
+        print("\n--- Services ---")
+        print("1. Book Flight\n2. Book Hotel\n3. Rent Car\n4. Book Attraction\n5. Book Airport Taxi\n6. Select Currency\n7. View My Bookings\n8. Cancel Booking\n9. Exit")
+        choice = input("Choose a service: ")
+        
+        if choice in services:
+            try:
+                # Booking the service and adding the booking to the user's list
+                details = services[choice].book()
+                card = input("Enter card number (16 digits): ")
+                exp = input("Expiry (MM/YY): ")
+                cvv = input("CVV: ")
+                proxy = PaymentProxy(RealPaymentService())
+                proxy.pay(card, exp, cvv)
+                system.current_user.add_booking(details)
+                
+                # Add the service type to the booking_services list to track what was booked
+                booking_services.append((services[choice], details))  # Store service and details
+                
+                print("Booking successful!")
+            except (InvalidInputException, PaymentFailedException) as e:
+                print(f"Error: {e}")
+        
+        elif choice == '6':
+            select_currency()
+        
+        elif choice == '7':
+            print("Your Bookings:")
+            for idx, (service, booking) in enumerate(booking_services):
+                print(f"{idx + 1}. {booking}")
+        
+        elif choice == '8':  # Cancel booking
+            print("Your current bookings:")
+            for idx, (service, booking) in enumerate(booking_services):
+                print(f"{idx + 1}. {booking}")
 
-        try:
-            self.db.execute_query("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                                 (user.username, user._password, user.role))
-            messagebox.showinfo("Success", "Sign-up successful!")
-            self.show_login_screen()
-        except sqlite3.IntegrityError:
-            messagebox.showerror("Error", "Username already exists.")
+            cancel_choice = int(input("Choose a booking to cancel (number): ")) - 1
+            if 0 <= cancel_choice < len(booking_services):
+                cancelled_service, cancelled_booking = booking_services.pop(cancel_choice)
+                system.current_user.bookings.remove(cancelled_booking)  # Also remove from user bookings
+                print(f"Booking cancelled: {cancelled_booking}")
 
-    def show_dashboard(self):
-        self.clear_screen()
-        if self.current_user.role == "admin":
-            self.show_admin_dashboard()
+                # Silently return seat if it's a flight
+                if isinstance(cancelled_service, Flight):
+                    try:
+                        seat_part = cancelled_booking.split("Seat: ")[1].strip()
+                        cancelled_service.available_seats.append(seat_part)
+                    except IndexError:
+                        pass  # Booking didn't include a seat — ignore
+            else:
+                print("Invalid choice.")
+
+
+        
+        elif choice == '9':
+            break
+        
         else:
-            self.show_passenger_dashboard()
-
-    def show_admin_dashboard(self):
-        tk.Button(self.root, text="Add Flight", command=self.show_add_flight_screen).grid(row=0, column=0)
-        tk.Button(self.root, text="View Reservations", command=self.view_reservations).grid(row=0, column=1)
-        tk.Button(self.root, text="Logout", command=self.show_login_screen).grid(row=0, column=2)
-
-    def show_passenger_dashboard(self):
-        tk.Button(self.root, text="Search Flights", command=self.show_search_flights_screen).grid(row=0, column=0)
-        tk.Button(self.root, text="Book Ticket", command=self.show_book_ticket_screen).grid(row=0, column=1)
-        tk.Button(self.root, text="Logout", command=self.show_login_screen).grid(row=0, column=2)
-
-    def show_add_flight_screen(self):
-        self.clear_screen()
-        tk.Label(self.root, text="Flight Number:").grid(row=0, column=0)
-        self.flight_number_entry = tk.Entry(self.root)
-        self.flight_number_entry.grid(row=0, column=1)
-
-        tk.Label(self.root, text="Airline:").grid(row=1, column=0)
-        self.airline_entry = tk.Entry(self.root)
-        self.airline_entry.grid(row=1, column=1)
-
-        tk.Label(self.root, text="Origin:").grid(row=2, column=0)
-        self.origin_entry = tk.Entry(self.root)
-        self.origin_entry.grid(row=2, column=1)
-
-        tk.Label(self.root, text="Destination:").grid(row=3, column=0)
-        self.destination_entry = tk.Entry(self.root)
-        self.destination_entry.grid(row=3, column=1)
-
-        tk.Label(self.root, text="Departure Time (YYYY-MM-DD HH:MM):").grid(row=4, column=0)
-        self.departure_time_entry = tk.Entry(self.root)
-        self.departure_time_entry.grid(row=4, column=1)
-
-        tk.Label(self.root, text="Arrival Time (YYYY-MM-DD HH:MM):").grid(row=5, column=0)
-        self.arrival_time_entry = tk.Entry(self.root)
-        self.arrival_time_entry.grid(row=5, column=1)
-
-        tk.Label(self.root, text="Price:").grid(row=6, column=0)
-        self.price_entry = tk.Entry(self.root)
-        self.price_entry.grid(row=6, column=1)
-
-        tk.Button(self.root, text="Add Flight", command=self.add_flight).grid(row=7, column=0)
-        tk.Button(self.root, text="Back", command=self.show_dashboard).grid(row=7, column=1)
-
-    def add_flight(self):
-        flight = (
-            self.flight_number_entry.get(),
-            self.airline_entry.get(),
-            self.origin_entry.get(),
-            self.destination_entry.get(),
-            self.departure_time_entry.get(),
-            self.arrival_time_entry.get(),
-            float(self.price_entry.get())
-        )
-        self.current_user.add_flight(self.db, flight)
-        messagebox.showinfo("Success", "Flight added successfully!")
-        self.show_dashboard()
-
-    def view_reservations(self):
-        reservations = self.current_user.view_reservations(self.db)
-        self.clear_screen()
-        for i, res in enumerate(reservations):
-            tk.Label(self.root, text=f"Ticket ID: {res[0]} | Name: {res[1]} | Age: {res[2]} | Flight ID: {res[3]} | Seat: {res[4]} | Payment: {res[5]}").grid(row=i, column=0)
-        tk.Button(self.root, text="Back", command=self.show_dashboard).grid(row=len(reservations), column=0)
-
-    def show_search_flights_screen(self):
-        self.clear_screen()
-        tk.Label(self.root, text="Departure City:").grid(row=0, column=0)
-        self.origin_search_entry = tk.Entry(self.root)
-        self.origin_search_entry.grid(row=0, column=1)
-
-        tk.Label(self.root, text="Destination City:").grid(row=1, column=0)
-        self.destination_search_entry = tk.Entry(self.root)
-        self.destination_search_entry.grid(row=1, column=1)
-
-        tk.Button(self.root, text="Search", command=self.search_flights).grid(row=2, column=0)
-        tk.Button(self.root, text="Back", command=self.show_dashboard).grid(row=2, column=1)
-
-    def search_flights(self):
-        origin = self.origin_search_entry.get()
-        destination = self.destination_search_entry.get()
-        flights = self.current_user.view_flights(self.db, origin, destination)
-        self.clear_screen()
-        for i, flight in enumerate(flights):
-            tk.Label(self.root, text=f"ID: {flight[0]} | {flight[1]} | {flight[2]} | {flight[3]} -> {flight[4]} | {flight[5]} | {flight[6]} | Price: {flight[7]} EGP").grid(row=i, column=0)
-        tk.Button(self.root, text="Back", command=self.show_dashboard).grid(row=len(flights), column=0)
-
-    def show_book_ticket_screen(self):
-        self.clear_screen()
-        tk.Label(self.root, text="Flight ID:").grid(row=0, column=0)
-        self.flight_id_entry = tk.Entry(self.root)
-        self.flight_id_entry.grid(row=0, column=1)
-
-        tk.Label(self.root, text="Full Name:").grid(row=1, column=0)
-        self.user_name_entry = tk.Entry(self.root)
-        self.user_name_entry.grid(row=1, column=1)
-
-        tk.Label(self.root, text="Age:").grid(row=2, column=0)
-        self.user_age_entry = tk.Entry(self.root)
-        self.user_age_entry.grid(row=2, column=1)
-
-        tk.Label(self.root, text="Seat:").grid(row=3, column=0)
-        self.seat_entry = tk.Entry(self.root)
-        self.seat_entry.grid(row=3, column=1)
-
-        tk.Label(self.root, text="Card Number:").grid(row=4, column=0)
-        self.card_number_entry = tk.Entry(self.root)
-        self.card_number_entry.grid(row=4, column=1)
-
-        tk.Button(self.root, text="Book", command=self.book_ticket).grid(row=5, column=0)
-        tk.Button(self.root, text="Back", command=self.show_dashboard).grid(row=5, column=1)
-
-    def book_ticket(self):
-        flight_id = int(self.flight_id_entry.get())
-        reservation = (
-            self.user_name_entry.get(),
-            int(self.user_age_entry.get()),
-            flight_id,
-            self.seat_entry.get(),
-            "Paid",
-            self.card_number_entry.get()
-        )
-        self.current_user.book_ticket(self.db, reservation)
-        messagebox.showinfo("Success", "Ticket booked successfully!")
-        self.show_dashboard()
-
-    def clear_screen(self):
-        for widget in self.root.winfo_children():
-            widget.destroy()
+            print("Invalid choice.")
 
 
-# Run the Application
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = AirlineSystemApp(root)
-    root.mainloop() project
+    main()
