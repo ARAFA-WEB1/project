@@ -248,7 +248,7 @@ class AirportTaxi(BookingService):
 # ---------------------- Main Program ----------------------
 def main():
     system = BookingSystemSingleton.get_instance()
-    print("Welcome to Booking.com Clone")
+    print("Welcome to AIRLINE Reservation System")
     
     while True:
         action = input("1. Sign Up  2. Login  3. Exit: ")
