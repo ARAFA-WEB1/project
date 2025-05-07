@@ -281,9 +281,9 @@ def main():
     }
 
     booking_services = []  # To store the services each user books
-
+    select_currency()
     while True:
-        select_currency()
+        
         print("\n--- Services ---")
         print("1. Book Flight\n2. Book Hotel\n3. Rent Car\n4. Book Attraction\n5. Book Airport Taxi\n6. Select Currency\n7. View My Bookings\n8. Cancel Booking\n9. Exit")
         choice = input("Choose a service: ")
