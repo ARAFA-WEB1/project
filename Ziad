@@ -236,6 +236,8 @@ def main():
             if user and user.password == password:
                 system.current_user = user
                 print("Login successful.")
+                # Move the currency selection here after successful login
+                select_currency()
                 break
             else:
                 print("Invalid credentials.")
