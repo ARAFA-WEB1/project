@@ -1,176 +1,344 @@
 from abc import ABC, abstractmethod
 from multipledispatch import dispatch
+import datetime
 
-class Person(ABC):
-    def __init__(self, name):
-        self.__name = name
+# ---------------------- Currency Conversion ----------------------
+current_currency = "USD"
+currency_rates = {
+    "USD": 1.0,
+    "EGP": 50.0,
+    "KWD": 0.31,
+    "SAR": 3.75,
+    "JPY": 155.0,
+    "EUR": 0.93,
+    "GBP": 0.80,
+    "AED": 3.67,
+    "CNY": 7.23
+}
 
-    @abstractmethod
-    def get_name(self):
-        pass
+def convert_price(price_usd):
+    return round(price_usd * currency_rates[current_currency], 2)
 
-    @abstractmethod
-    def set_name(self, name):
-        pass
+# ---------------------- Exception Classes ----------------------
+class BookingException(Exception):
+    pass
 
-    @abstractmethod
-    def show_details(self):
-        pass
+class InvalidInputException(BookingException):
+    pass
 
-class Payment:
+class PaymentFailedException(BookingException):
+    pass
+
+# ---------------------- Singleton Pattern ----------------------
+class BookingSystemSingleton:
+    _instance = None
+
+    @staticmethod
+    def get_instance():
+        if BookingSystemSingleton._instance is None:
+            BookingSystemSingleton()
+        return BookingSystemSingleton._instance
+
     def __init__(self):
-        self.amount = 0
-        self.method = ""
-        self.details = ""
-
-    @dispatch(float)
-    def pay(self, amount):
-        self.amount = amount
-        self.method = "Cash"
-        self.details = "Paid in cash"
-       
-
-    @dispatch(float, str)
-    def pay(self, amount, card_number):
-        self.amount = amount
-        self.method = "Credit Card"
-        self.details = f"Card ending with {card_number[-4:]}"
-        
-
-    @dispatch(float, str, str)
-    def pay(self, amount, wallet_type, phone_number):
-        self.amount = amount
-        self.method = wallet_type
-        self.details = f"Wallet Phone: {phone_number}"
-        
-
-    def show_payment_info(self):
-        print(f"Payment Method: {self.method}")
-        print(f"Amount Paid: ${self.amount}")
-        print(f"Details: {self.details}")
-
-
-class Passenger(Person):
-    def __init__(self, name, ID, gender, date_of_birth, nationality, number):
-        super().__init__(name)
-        self.__ID = ID
-        self.gender = gender
-        self.date_of_birth = date_of_birth
-        self.nationality = nationality
-        self.number = number 
-        self.trip = None
-        self.hotel = None
-        self.pilot = None
-        self.payment = Payment()
-
-    def get_name(self):
-        return self._Person__name
-
-    def set_name(self, name):
-        self._Person__name = name
-
-    def get_ID(self):
-        return self.__ID
-
-    def set_ID(self, ID):
-        self.__ID = ID
-
-    def show_details(self):
-        print(f"\nPassenger Name: {self.get_name()} , ID: {self.get_ID()} , Gender: {self.gender} , DOB: {self.date_of_birth} , Phone: {self.number} , Nationality: {self.nationality}")
-        
-        if self.pilot:
-            print(f"Pilot: {self.pilot.name}")
+        if BookingSystemSingleton._instance is not None:
+            raise Exception("This class is a singleton!")
         else:
-            print("No pilot assigned.")
+            BookingSystemSingleton._instance = self
+            self.users = {}
+            self.current_user = None
+            self.services = []
 
-        if self.trip:
-            print("\nTrip Info:")
-            self.trip.display_info()
+# ---------------------- Proxy Pattern ----------------------
+class PaymentProxy:
+    def __init__(self, payment_service):
+        self.payment_service = payment_service
+
+    def pay(self, card_number=None, expiry=None, cvv=None):
+        while True:
+            try:
+                if card_number is None:
+                    card_number = input("Enter card number (16 digits): ")
+                if len(card_number) != 16 or not card_number.isdigit():
+                    raise PaymentFailedException("Invalid card number. Must be exactly 16 digits.")
+
+                if expiry is None:
+                    expiry = input("Enter expiry date (MM/YY): ")
+                try:
+                    month, year = map(int, expiry.split("/"))
+                except ValueError:
+                    raise PaymentFailedException("Expiry must be in MM/YY format using numbers.")
+
+                current_year = datetime.datetime.now().year % 100
+                if month < 1 or month > 12 or year < current_year:
+                    raise PaymentFailedException("Card expired or invalid expiry date.")
+
+                if cvv is None:
+                    cvv = input("Enter CVV (3 digits): ")
+                if not cvv.isdigit() or len(cvv) != 3:
+                    raise PaymentFailedException("CVV must be exactly 3 digits.")
+
+                self.payment_service.process()
+                break  # Exit loop on successful payment
+
+            except PaymentFailedException as e:
+                print(f"Payment error: {e}")
+                card_number, expiry, cvv = None, None, None
+                retry = input("Try again? (y/n): ").lower()
+                if retry != 'y':
+                    raise PaymentFailedException("Payment cancelled by user.")
+
+class RealPaymentService:
+    def process(self):
+        print("Payment processed successfully.")
+
+# ---------------------- Abstract Booking Service ----------------------
+class BookingService(ABC):
+    @abstractmethod
+    def book(self):
+        pass
+
+# ---------------------- User System ----------------------
+class User:
+    def __init__(self, username, password):
+        if len(username) < 3 or len(password) < 6:
+            raise InvalidInputException("Username or password too short.")
+        self.username = username
+        self.password = password
+        self.bookings = []
+
+    def add_booking(self, booking):
+        self.bookings.append(booking)
+
+# ---------------------- Flights ----------------------
+class Flight(BookingService):
+    def __init__(self):
+        self.available_flights = [
+            {"from": "Cairo", "to": "Paris", "duration": "4h", "price": 350},
+            {"from": "New York", "to": "London", "duration": "7h", "price": 550},
+            {"from": "Tokyo", "to": "Los Angeles", "duration": "11h", "price": 750},
+            {"from": "Dubai", "to": "Sydney", "duration": "14h", "price": 900},
+            {"from": "Paris", "to": "Rome", "duration": "2h", "price": 120},
+            {"from": "London", "to": "Berlin", "duration": "1.5h", "price": 110},
+            {"from": "Beijing", "to": "Bangkok", "duration": "4h", "price": 300},
+            {"from": "Toronto", "to": "Vancouver", "duration": "5h", "price": 320},
+            {"from": "New York", "to": "San Francisco", "duration": "6h", "price": 400},
+            {"from": "Mumbai", "to": "Dubai", "duration": "3h", "price": 200},
+            {"from": "Istanbul", "to": "Athens", "duration": "1.5h", "price": 150},
+            {"from": "Madrid", "to": "Lisbon", "duration": "1.2h", "price": 100},
+            {"from": "Seoul", "to": "Tokyo", "duration": "2.5h", "price": 250},
+            {"from": "Los Angeles", "to": "Honolulu", "duration": "6h", "price": 450},
+            {"from": "Chicago", "to": "Miami", "duration": "3h", "price": 280},
+            {"from": "Johannesburg", "to": "Cape Town", "duration": "2h", "price": 170},
+            {"from": "Singapore", "to": "Bali", "duration": "2.5h", "price": 230},
+            {"from": "Amsterdam", "to": "Oslo", "duration": "2h", "price": 140},
+            {"from": "Zurich", "to": "Vienna", "duration": "1.5h", "price": 160},
+            {"from": "Doha", "to": "Istanbul", "duration": "4.5h", "price": 300},
+        ]
+
+    def book(self):
+        print("Available Flights:")
+        for idx, flight in enumerate(self.available_flights):
+            print(f"{idx+1}. {flight['from']} -> {flight['to']} | {flight['duration']} | {convert_price(flight['price'])} {current_currency}")
+        choice = int(input("Choose a flight number: ")) - 1
+        if choice not in range(len(self.available_flights)):
+            raise InvalidInputException("Invalid choice.")
+
+        date = input("Enter your travel date (YYYY-MM-DD): ")
+
+        # Seat selection
+        if not hasattr(self, 'available_seats'):
+            self.available_seats = ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4", "C1", "C2"]
+
+        if not self.available_seats:
+            print("No available seats.")
+            return "Booking failed: No seats left."
+
+        print(f"Available seats: {', '.join(self.available_seats)}")
+        seat = input("Choose your seat: ")
+
+        if seat not in self.available_seats:
+            print("Invalid or already booked seat.")
+            return "Booking failed: Seat unavailable."
+
+        self.available_seats.remove(seat)
+        print("Booking flight...")
+        return f"Flight: {self.available_flights[choice]} on {date} Seat: {seat}"
+
+    def cancel(self, user, booking_detail):
+        if booking_detail.startswith("Flight:"):
+            print(f"Canceling flight booking: {booking_detail}")
+            # Return seat to available seats
+            seat = booking_detail.split("Seat: ")[1]
+            if seat not in self.available_seats:
+                self.available_seats.append(seat)
+            return user.cancel_booking(booking_detail)
+        return False
+
+# ---------------------- Hotels ----------------------
+class Hotel(BookingService):
+    def __init__(self):
+        self.hotels = [
+            {"name": "Hilton Cairo", "price": 120},
+            {"name": "Marriott Paris", "price": 200},
+            {"name": "Sheraton New York", "price": 250},
+            {"name": "Four Seasons Tokyo", "price": 300},
+            {"name": "Ritz London", "price": 350},
+            {"name": "Grand Hyatt Dubai", "price": 220},
+            {"name": "The Oberoi Mumbai", "price": 180},
+            {"name": "Peninsula Hong Kong", "price": 330},
+            {"name": "Park Hyatt Sydney", "price": 310},
+            {"name": "Shangri-La Singapore", "price": 290},
+            {"name": "InterContinental Berlin", "price": 210},
+            {"name": "Mandarin Oriental Bangkok", "price": 270},
+            {"name": "The Langham Melbourne", "price": 240},
+            {"name": "Sofitel Rome Villa Borghese", "price": 260},
+            {"name": "JW Marriott Seoul", "price": 280},
+        ]
+
+    def book(self):
+        print("Available Hotels:")
+        for idx, hotel in enumerate(self.hotels):
+            print(f"{idx+1}. {hotel['name']} | {convert_price(hotel['price'])} {current_currency} per night")
+        choice = int(input("Choose a hotel number: ")) - 1
+        nights = int(input("Enter number of nights: "))
+        date = input("Check-in date (YYYY-MM-DD): ")
+        return f"Hotel: {self.hotels[choice]['name']} for {nights} nights from {date}"
+
+# ---------------------- Car Rentals ----------------------
+class CarRental(BookingService):
+    def book(self):
+        print("Available Cars: 1. Toyota Corolla, 2. BMW 3 Series")
+        car = input("Choose your car (1 or 2): ")
+        duration = input("Rental duration (days): ")
+        return f"Car Rental: {car}, for {duration} days"
+
+# ---------------------- Attractions ----------------------
+class Attraction(BookingService):
+    def book(self):
+        attractions = ["Eiffel Tower Tour", "Pyramids Tour", "London Eye"]
+        for idx, attr in enumerate(attractions):
+            print(f"{idx+1}. {attr}")
+        choice = int(input("Choose an attraction: ")) - 1
+        date = input("Date for attraction: ")
+        return f"Attraction: {attractions[choice]} on {date}"
+
+# ---------------------- Airport Taxi ----------------------
+class AirportTaxi(BookingService):
+    def book(self):
+        pickup = input("Enter pickup location: ")
+        time = input("Enter pickup time (HH:MM): ")
+        return f"Taxi booked from {pickup} at {time}"
+
+# ---------------------- Currency Selector ----------------------
+def select_currency():
+    global current_currency
+    print("Available Currencies:")
+    for idx, currency in enumerate(currency_rates.keys()):
+        print(f"{idx+1}. {currency}")
+    choice = int(input("Choose a currency number: ")) - 1
+    if choice in range(len(currency_rates)):
+        current_currency = list(currency_rates.keys())[choice]
+        print(f"Currency selected: {current_currency}")
+    else:
+        print("Invalid currency choice.")
+
+# ---------------------- Main Program ----------------------
+def main():
+    system = BookingSystemSingleton.get_instance()
+    print("Welcome to AIRLINE Reservation System")
+
+    while True:
+        action = input("1. Sign Up  2. Login  3. Exit: ")
+        if action == '1':
+            username = input("Username: ")
+            password = input("Password: ")
+            try:
+                user = User(username, password)
+                system.users[username] = user
+                print("Sign up successful.")
+            except InvalidInputException as e:
+                print(e)
+        elif action == '2':
+            username = input("Username: ")
+            password = input("Password: ")
+            user = system.users.get(username)
+            if user and user.password == password:
+                system.current_user = user
+                print("Login successful.")
+                break
+            else:
+                print("Invalid credentials.")
+        elif action == '3':
+            return
+
+    # Authenticated menu
+    services = {
+        '1': Flight(),
+        '2': Hotel(),
+        '3': CarRental(),
+        '4': Attraction(),
+        '5': AirportTaxi()
+    }
+
+    booking_services = []  # To store the services each user books
+
+    while True:
+        print("\n--- Services ---")
+        print("1. Book Flight\n2. Book Hotel\n3. Rent Car\n4. Book Attraction\n5. Book Airport Taxi\n6. Select Currency\n7. View My Bookings\n8. Cancel Booking\n9. Exit")
+        choice = input("Choose a service: ")
+
+        if choice in services:
+            try:
+                # Booking the service and adding the booking to the user's list
+                details = services[choice].book()
+                card = input("Enter card number (16 digits): ")
+                exp = input("Expiry (MM/YY): ")
+                cvv = input("CVV: ")
+                proxy = PaymentProxy(RealPaymentService())
+                proxy.pay(card, exp, cvv)
+                system.current_user.add_booking(details)
+
+                # Add the service type to the booking_services list to track what was booked
+                booking_services.append((services[choice], details))  # Store service and details
+
+                print("Booking successful!")
+            except (InvalidInputException, PaymentFailedException) as e:
+                print(f"Error: {e}")
+
+        elif choice == '6':
+            select_currency()
+
+        elif choice == '7':
+            print("Your Bookings:")
+            for idx, (service, booking) in enumerate(booking_services):
+                print(f"{idx + 1}. {booking}")
+
+        elif choice == '8':  # Cancel booking
+            print("Your current bookings:")
+            for idx, (service, booking) in enumerate(booking_services):
+                print(f"{idx + 1}. {booking}")
+
+            cancel_choice = int(input("Choose a booking to cancel (number): ")) - 1
+            if 0 <= cancel_choice < len(booking_services):
+                cancelled_service, cancelled_booking = booking_services.pop(cancel_choice)
+                system.current_user.bookings.remove(cancelled_booking)  # Also remove from user bookings
+                print(f"Booking cancelled: {cancelled_booking}")
+
+                # Silently return seat if it's a flight
+                if isinstance(cancelled_service, Flight):
+                    try:
+                        seat_part = cancelled_booking.split("Seat: ")[1].strip()
+                        cancelled_service.available_seats.append(seat_part)
+                    except IndexError:
+                        pass  # Booking didn't include a seat — ignore
+            else:
+                print("Invalid choice.")
+
+        elif choice == '9':
+            break
+
         else:
-            print("\nNo trip assigned.")
+            print("Invalid choice.")
 
-        if self.hotel:
-            print("\nHotel Info:")
-            self.hotel.display_info()
-        else:
-            print("\nNo hotel assigned.")
-
-        print("\nPayment Info:")
-        self.payment.show_payment_info()
-
-    def assign_to_trip(self, trip):
-        self.trip = trip
-
-    def assign_to_hotel(self, hotel):
-        self.hotel = hotel
-
-    def assign_pilot(self, pilot):
-        self.pilot = pilot
-
-    def make_payment_cash(self, amount):
-        self.payment.pay(float(amount))
-
-    def make_payment_card(self, amount, card):
-        self.payment.pay(float(amount), card)
-
-    def make_payment_wallet(self, amount, wallet, phone):
-        self.payment.pay(float(amount), wallet, phone)
-
-class Pilot:
-    def __init__(self, pilot_id, name, license_number, experience_years):
-        self.pilot_id = pilot_id
-        self.name = name
-        self.license_number = license_number
-        self.experience_years = experience_years
-
-    def display_info(self):
-        print("\nPilot Information:")
-        print(f"ID: {self.pilot_id}")
-        print(f"Name: {self.name}")
-        print(f"License Number: {self.license_number}")
-        print(f"Years of Experience: {self.experience_years}")
-
-class Hotel:
-    def __init__(self, name, location, room_number, price_per_night):
-        self.name = name
-        self.location = location
-        self.room_number = room_number
-        self.price_per_night = price_per_night
-
-    def display_info(self):
-        print(f"Hotel Name: {self.name}")
-        print(f"Location: {self.location}")
-        print(f"Room Number: {self.room_number}")
-        print(f"Price per Night: ${self.price_per_night}")
-
-class Traveling:
-    def __init__(self, from_location, to_location, price, hour, class_type):
-        self.from_location = from_location
-        self.to_location = to_location
-        self.price = price
-        self.hour = hour
-        self.class_type = class_type
-
-    def display_info(self):
-        print(f"From: {self.from_location}")
-        print(f"To: {self.to_location}")
-        print(f"Price: ${self.price}")
-        print(f"Time: {self.hour} hour(s)")
-        print(f"Class: {self.class_type}")
-
-trip1 = Traveling("Cairo", "Paris", 500, 4, "Business")
-pilot1 = Pilot("P001", "Captain Youssef", "LIC98765", 15)
-hotel1 = Hotel("Grand Paris", "Downtown", 204, 120)
-
-passenger1 = Passenger("Ali", "EG123", "Male", "1990-01-01", "Egyptian", "0123456789")
-
-passenger1.assign_to_trip(trip1)
-passenger1.assign_to_hotel(hotel1)
-passenger1.assign_pilot(pilot1)
-
-#passenger1.make_payment_cash(200)        
-#passenger1.make_payment_card(300, "1234567812345678")  
-passenger1.make_payment_wallet(500 , "Vodafone Cash", "01098765432")  
-
-passenger1.show_details()
- 
+if __name__ == "__main__":
+    main()
