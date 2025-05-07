@@ -235,15 +235,18 @@ class AirportTaxi(BookingService):
         return f"Taxi booked from {pickup} at {time}"
 
 # ---------------------- Currency Selector ----------------------
-    currencies = ["USD", "EUR", "EGP", "AED", "INR", "JPY", "GBP", "SAR", "CAD", "AUD"]
-    print("Available currencies:")
-    for i, c in enumerate(currencies):
-        print(f"{i+1}. {c}")
-    choice = int(input("Select currency: "))
-    if 1 <= choice <= len(currencies):
-        print(f"Currency set to {currencies[choice-1]}")
+    def select_currency():
+    global current_currency
+    print("Available Currencies:")
+    for idx, currency in enumerate(currency_rates.keys()):
+        print(f"{idx+1}. {currency}")
+    choice = int(input("Choose a currency number: ")) - 1
+    if choice in range(len(currency_rates)):
+        current_currency = list(currency_rates.keys())[choice]
+        print(f"Currency selected: {current_currency}")
     else:
-        print("Invalid choice.")
+        print("Invalid currency choice.")
+
 
 # ---------------------- Main Program ----------------------
 def main():
