@@ -1,0 +1,175 @@
+BEGIN
+
+    ---------------------- Currency Conversion ----------------------
+    SET current_currency TO "USD"
+    DEFINE currency_rates AS DICTIONARY WITH currency values
+
+    FUNCTION convert_price(price_usd):
+        RETURN rounded value of (price_usd * currency_rates[current_currency])
+
+    ---------------------- Exception Classes ----------------------
+    CLASS BookingException EXTENDS Exception
+    CLASS InvalidInputException EXTENDS BookingException
+    CLASS PaymentFailedException EXTENDS BookingException
+
+    ---------------------- Singleton Pattern ----------------------
+    CLASS BookingSystemSingleton:
+        STATIC _instance = None
+
+        FUNCTION get_instance():
+            IF _instance IS None:
+                CALL constructor
+            RETURN _instance
+
+        FUNCTION __init__():
+            IF _instance IS NOT None:
+                RAISE Exception("This class is a singleton!")
+            ELSE:
+                SET _instance TO self
+                INITIALIZE users AS EMPTY DICTIONARY
+                INITIALIZE current_user AS None
+                INITIALIZE services AS EMPTY LIST
+
+    ---------------------- Proxy Pattern ----------------------
+    CLASS PaymentProxy:
+        FUNCTION __init__(payment_service):
+            SET self.payment_service TO payment_service
+
+        FUNCTION pay(card_number=None, expiry=None, cvv=None):
+            WHILE True:
+                TRY:
+                    IF card_number IS None:
+                        PROMPT user for card number
+                    VALIDATE card_number LENGTH AND DIGITS
+
+                    IF expiry IS None:
+                        PROMPT user for expiry date
+                    VALIDATE expiry FORMAT AND VALUES
+
+                    IF cvv IS None:
+                        PROMPT user for CVV
+                    VALIDATE cvv LENGTH AND DIGITS
+
+                    CALL self.payment_service.process()
+                    BREAK LOOP
+
+                EXCEPT PaymentFailedException AS e:
+                    PRINT error message
+                    PROMPT user to retry or cancel
+
+    CLASS RealPaymentService:
+        FUNCTION process():
+            PRINT "Payment processed successfully."
+
+    ---------------------- Abstract Booking Service ----------------------
+    CLASS BookingService (ABSTRACT):
+        FUNCTION book() (ABSTRACT)
+
+    ---------------------- User System ----------------------
+    CLASS User:
+        FUNCTION __init__(username, password):
+            VALIDATE username and password LENGTH
+            SET self.username AND self.password
+            INITIALIZE bookings AS EMPTY LIST
+
+        FUNCTION add_booking(booking):
+            APPEND booking TO self.bookings
+
+    ---------------------- Flights ----------------------
+    CLASS Flight EXTENDS BookingService:
+        FUNCTION __init__():
+            INITIALIZE available_flights AS LIST OF DICTIONARIES
+
+        FUNCTION book():
+            PRINT available flights
+            PROMPT user to choose a flight
+            VALIDATE choice
+
+            PROMPT user for travel date
+            VALIDATE seat selection
+            REMOVE selected seat from available seats
+            RETURN booking details
+
+        FUNCTION cancel(user, booking_detail):
+            IF booking_detail STARTS WITH "Flight:":
+                PRINT canceling message
+                RETURN user.cancel_booking(booking_detail)
+
+    ---------------------- Hotels ----------------------
+    CLASS Hotel EXTENDS BookingService:
+        FUNCTION __init__():
+            INITIALIZE hotels AS LIST OF DICTIONARIES
+
+        FUNCTION book():
+            PRINT available hotels
+            PROMPT user to choose a hotel
+            PROMPT user for number of nights and check-in date
+            RETURN booking details
+
+    ---------------------- Car Rentals ----------------------
+    CLASS CarRental EXTENDS BookingService:
+        FUNCTION book():
+            PRINT available cars
+            PROMPT user to choose a car and rental duration
+            RETURN booking details
+
+    ---------------------- Attractions ----------------------
+    CLASS Attraction EXTENDS BookingService:
+        FUNCTION book():
+            INITIALIZE attractions AS LIST
+            PRINT available attractions
+            PROMPT user to choose an attraction and date
+            RETURN booking details
+
+    ---------------------- Airport Taxi ----------------------
+    CLASS AirportTaxi EXTENDS BookingService:
+        FUNCTION book():
+            PROMPT user for pickup location and time
+            RETURN booking details
+
+    ---------------------- Currency Selector ----------------------
+    FUNCTION select_currency():
+        PRINT available currencies
+        PROMPT user to choose a currency
+        VALIDATE choice AND SET current_currency
+
+    ---------------------- Main Program ----------------------
+    FUNCTION main():
+        SET system TO BookingSystemSingleton.get_instance()
+        PRINT welcome message
+
+        WHILE True:
+            PROMPT user for action (Sign Up, Login, Exit)
+            IF action is Sign Up:
+                PROMPT for username and password
+                TRY:
+                    CREATE User instance
+                    ADD user to system.users
+                    PRINT success message
+                EXCEPT InvalidInputException AS e:
+                    PRINT error message
+
+            ELSE IF action is Login:
+                PROMPT for username and password
+                VALIDATE credentials
+                IF valid:
+                    SET system.current_user
+                    PRINT success message
+                    BREAK LOOP
+                ELSE:
+                    PRINT invalid credentials message
+
+            ELSE IF action is Exit:
+                RETURN
+
+        INITIALIZE services AS DICTIONARY OF BookingService instances
+        INITIALIZE booking_services AS EMPTY LIST
+
+        WHILE True:
+            PRINT service options
+            PROMPT user to choose a service
+
+            IF choice in services:
+                TRY:
+                    CALL services[choice].book()
+                    PROMPT user
