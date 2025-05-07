@@ -305,7 +305,7 @@ def main():
         else:
             print("Invalid choice. Please try again.")
 
-def select_currency():
+def select_currency(system):
     global current_currency
     print("\n--- Currency Selection ---")
     print("1. USD\n2. EGP\n3. KWD\n4. SAR\n5. JPY\n6. EUR\n7. GBP\n8. AED\n9. CNY")
