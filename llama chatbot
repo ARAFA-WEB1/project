@@ -1,0 +1,13 @@
+import ollama
+
+def chat_with_lama(prompt):
+    response = ollama.chat(
+        model='llama3',
+        messages=[{'role': 'user', 'content': prompt}])
+    return response['message']['content']
+
+while True:
+    user_input = input("I am LUMI. How can I help you: ")
+    if user_input.lower() in ["quit", "exit", "bye", "cancel"]:
+        break
+    print("LUMI:", chat_with_lama(user_input))
