@@ -44,25 +44,25 @@ class BookingSystemSingleton:
             raise Exception("This class is a singleton!")
         else:
             BookingSystemSingleton._instance = self
-            self._users = {}
-            self._current_user = None
+            self.__users = {}
+            self.__current_user = None
             self.services = []
 
     @property
     def users(self):
-        return self._users
+        return self.__users
 
     @users.setter
     def users(self, value):
-        self._users = value
+        self.__users = value
 
     @property
     def current_user(self):
-        return self._current_user
+        return self.__current_user
 
     @current_user.setter
     def current_user(self, user):
-        self._current_user = user
+        self.__current_user = user
 
 # ---------------------- Proxy Pattern ----------------------
 class PaymentProxy:
