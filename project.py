@@ -1,4 +1,4 @@
-# from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod
 from multipledispatch import dispatch
 import datetime
 
@@ -220,21 +220,6 @@ class Hotel(BookingService):
             {"name": "JW Marriott Seoul", "price": 280},
         ]
 
-    @dispatch(int)
-    def book_choose(self, nights):
-        hotel = self.book()
-        date = input("Check-in date (YYYY-MM-DD): ")
-        print( f"Hotel: {hotel['name']} | Single Room | {nights} nights from {date}")
-
-    @dispatch(int, str)
-    def book_choose(self, nights, room_type):
-        hotel = self.book()
-        date = input("Check-in date (YYYY-MM-DD): ")
-        if room_type.lower() != "double":
-            raise InvalidInputException("Second argument must be 'double' for double room.")
-        print( f"Hotel: {hotel['name']} | Double Room | {nights} nights from {date}")
-
-
     def book(self):
         print("Available Hotels:")
         for idx, hotel in enumerate(self.hotels):
@@ -243,7 +228,21 @@ class Hotel(BookingService):
         if not (0 <= choice < len(self.hotels)):
             raise InvalidInputException("Invalid hotel choice.")
         return self.hotels[choice]
-        book_choose()
+
+    @dispatch(int)
+    def book_choose(self, nights):
+        hotel = self.book()
+        date = input("Check-in date (YYYY-MM-DD): ")
+        return f"Hotel: {hotel['name']} | Single Room | {nights} nights from {date}"
+
+    @dispatch(int, str)
+    def book_choose(self, nights, room_type):
+        hotel = self.book()
+        date = input("Check-in date (YYYY-MM-DD): ")
+        if room_type.lower() != "double":
+            raise InvalidInputException("Second argument must be 'double' for double room.")
+        return f"Hotel: {hotel['name']} | Double Room | {nights} nights from {date}"
+
 
     
 
@@ -317,7 +316,6 @@ def main():
     # Authenticated menu
     services = {
         '1': Flight(),
-        '2': Hotel(),
         '3': CarRental(),
         '4': Attraction(),
         '5': AirportTaxi()
@@ -348,6 +346,34 @@ def main():
                 print("Booking successful!")
             except (InvalidInputException, PaymentFailedException) as e:
                 print(f"Error: {e}")
+
+        elif choice == '2':  # Hotel
+            hotel_service = Hotel()
+            services[choice] = hotel_service  # Store instance for reuse
+
+            try:
+                nights = int(input("Enter number of nights: "))
+                room_type = input("Room type (single/double): ").strip().lower()
+
+                if room_type == "single":
+                    details = hotel_service.book_choose(nights)
+                elif room_type == "double":
+                    details = hotel_service.book_choose(nights, "double")
+                else:
+                    raise InvalidInputException("Invalid room type entered.")
+
+                card = input("Enter card number (16 digits): ")
+                exp = input("Expiry (MM/YY): ")
+                cvv = input("CVV: ")
+                proxy = PaymentProxy(RealPaymentService())
+                proxy.pay(card, exp, cvv)
+
+                system.current_user.add_booking(details)
+                booking_services.append((hotel_service, details))  # Track booking
+                print("Hotel booked successfully.")
+            except Exception as e:
+                print(f"Error: {e}")
+
 
         elif choice == '6':
             print("Your Bookings:")
