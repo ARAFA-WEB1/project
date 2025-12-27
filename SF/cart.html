@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - MediCare Store</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header (same as index.html) -->
+    <header class="header">
+        <div class="container">
+            <nav class="navbar">
+                <a href="index.html" class="logo">
+                    <i class="fas fa-hospital-alt"></i>
+                    <span>MediCare Store</span>
+                </a>
+                
+                <div class="nav-menu">
+                    <ul class="nav-links">
+                        <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+                        <li><a href="products.html"><i class="fas fa-box"></i> Products</a></li>
+                        <li><a href="help.html"><i class="fas fa-question-circle"></i> Help</a></li>
+                        <li class="dropdown">
+                            <a href="#"><i class="fas fa-user-md"></i> Categories <i class="fas fa-chevron-down"></i></a>
+                            <div class="dropdown-content">
+                                <a href="#"><i class="fas fa-heartbeat"></i> Diagnostic Equipment</a>
+                                <a href="#"><i class="fas fa-cut"></i> Surgical Instruments</a>
+                                <a href="#"><i class="fas fa-procedures"></i> Patient Monitoring</a>
+                                <a href="#"><i class="fas fa-shield-alt"></i> Personal Protection</a>
+                                <a href="#"><i class="fas fa-syringe"></i> Disposable Products</a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="nav-actions">
+                    <a href="cart.html" class="cart-icon active">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-count">3</span>
+                    </a>
+                    <div class="user-dropdown">
+                        <button class="user-btn">
+                            <i class="fas fa-user"></i> Mohamed
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="profile.html"><i class="fas fa-user-circle"></i> My Profile</a>
+                            <a href="#"><i class="fas fa-shopping-bag"></i> Orders</a>
+                            <a href="#"><i class="fas fa-heart"></i> Wishlist</a>
+                            <a href="login.html"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </div>
+                    </div>
+                    <button class="mobile-menu-btn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Cart Hero -->
+    <section class="page-hero">
+        <div class="container">
+            <div class="page-hero-content">
+                <h1>Shopping Cart</h1>
+                <div class="breadcrumb">
+                    <a href="index.html">Home</a> <i class="fas fa-chevron-right"></i>
+                    <a href="products.html">Products</a> <i class="fas fa-chevron-right"></i>
+                    <span>Cart</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cart Section -->
+    <section class="cart-section">
+        <div class="container">
+            <div class="cart-layout">
+                <!-- Cart Items -->
+                <div class="cart-items-section">
+                    <div class="cart-header">
+                        <h2>Your Cart Items (3)</h2>
+                        <button class="btn btn-outline clear-cart">Clear Cart</button>
+                    </div>
+                    
+                    <div class="cart-table">
+                        <div class="cart-table-header">
+                            <div class="cart-col product">Product</div>
+                            <div class="cart-col price">Price</div>
+                            <div class="cart-col quantity">Quantity</div>
+                            <div class="cart-col total">Total</div>
+                            <div class="cart-col actions">Actions</div>
+                        </div>
+                        
+                        <div class="cart-item-row">
+                            <div class="cart-col product">
+                                <div class="product-info">
+                                    <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80" alt="Product">
+                                    <div>
+                                        <h4>Digital Blood Pressure Monitor</h4>
+                                        <span class="product-category">Monitoring Devices</span>
+                                        <div class="product-sku">SKU: BP-2023-01</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="cart-col price">
+                                <div class="price-amount">EGP 1,299</div>
+                            </div>
+                            <div class="cart-col quantity">
+                                <div class="quantity-control">
+                                    <button class="quantity-btn minus">-</button>
+                                    <input type="number" value="1" min="1" max="10" class="quantity-input">
+                                    <button class="quantity-btn plus">+</button>
+                                </div>
+                            </div>
+                            <div class="cart-col total">
+                                <div class="total-amount">EGP 1,299</div>
+                            </div>
+                            <div class="cart-col actions">
+                                <button class="remove-btn"><i class="fas fa-trash"></i></button>
+                                <button class="wishlist-btn"><i class="far fa-heart"></i></button>
+                            </div>
+                        </div>
+                        
+                        <div class="cart-item-row">
+                            <div class="cart-col product">
+                                <div class="product-info">
+                                    <img src="https://images.unsplash.com/photo-1559757175-0eb30cd8c063?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80" alt="Product">
+                                    <div>
+                                        <h4>Infrared Digital Thermometer</h4>
+                                        <span class="product-category">Diagnostic Tools</span>
+                                        <div class="product-sku">SKU: TH-2023-05</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="cart-col price">
+                                <div class="price-amount">EGP 450</div>
+                            </div>
+                            <div class="cart-col quantity">
+                                <div class="quantity-control">
+                                    <button class="quantity-btn minus">-</button>
+                                    <input type="number" value="2" min="1" max="10" class="quantity-input">
+                                    <button class="quantity-btn plus">+</button>
+                                </div>
+                            </div>
+                            <div class="cart-col total">
+                                <div class="total-amount">EGP 900</div>
+                            </div>
+                            <div class="cart-col actions">
+                                <button class="remove-btn"><i class="fas fa-trash"></i></button>
+                                <button class="wishlist-btn"><i class="far fa-heart"></i></button>
+                            </div>
+                        </div>
+                        
+                        <div class="cart-item-row prescription-item">
+                            <div class="cart-col product">
+                                <div class="product-info">
+                                    <img src="https://images.unsplash.com/photo-1551601651-2a8555f1a136?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80" alt="Product">
+                                    <div>
+                                        <h4>Portable Oxygen Concentrator</h4>
+                                        <span class="product-category">Respiratory Care</span>
+                                        <div class="product-sku">SKU: OX-2023-12</div>
+                                        <div class="prescription-notice">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            Requires prescription approval
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="cart-col price">
+                                <div class="price-amount">EGP 18,500</div>
+                            </div>
+                            <div class="cart-col quantity">
+                                <div class="quantity-control">
+                                    <button class="quantity-btn minus">-</button>
+                                    <input type="number" value="1" min="1" max="2" class="quantity-input">
+                                    <button class="quantity-btn plus">+</button>
+                                </div>
+                            </div>
+                            <div class="cart-col total">
+                                <div class="total-amount">EGP 18,500</div>
+                            </div>
+                            <div class="cart-col actions">
+                                <button class="remove-btn"><i class="fas fa-trash"></i></button>
+                                <button class="upload-btn">
+                                    <i class="fas fa-upload"></i> Upload Prescription
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="cart-actions-row">
+                        <a href="products.html" class="btn btn-outline">
+                            <i class="fas fa-arrow-left"></i> Continue Shopping
+                        </a>
+                        <button class="btn btn-outline update-cart">Update Cart</button>
+                    </div>
+                </div>
+                
+                <!-- Cart Summary -->
+                <div class="cart-summary">
+                    <div class="summary-card">
+                        <h3>Order Summary</h3>
+                        
+                        <div class="summary-row">
+                            <span>Subtotal (3 items)</span>
+                            <span>EGP 20,699</span>
+                        </div>
+                        
+                        <div class="summary-row">
+                            <span>Shipping</span>
+                            <span>EGP 200</span>
+                        </div>
+                        
+                        <div class="summary-row">
+                            <span>Tax (14%)</span>
+                            <span>EGP 2,896</span>
+                        </div>
+                        
+                        <div class="summary-row discount">
+                            <span>Discount</span>
+                            <span>- EGP 1,000</span>
+                        </div>
+                        
+                        <div class="summary-divider"></div>
+                        
+                        <div class="summary-row total">
+                            <span>Total</span>
+                            <span>EGP 22,795</span>
+                        </div>
+                        
+                        <!-- Promo Code -->
+                        <div class="promo-code">
+                            <h4>Have a Promo Code?</h4>
+                            <div class="promo-input">
+                                <input type="text" placeholder="Enter code">
+                                <button class="btn btn-primary">Apply</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Checkout Button -->
+                        <a href="checkout.html" class="btn btn-primary checkout-btn">
+                            <i class="fas fa-lock"></i> Proceed to Checkout
+                        </a>
+                        
+                        <!-- Payment Methods -->
+                        <div class="payment-methods">
+                            <p>We accept:</p>
+                            <div class="payment-icons">
+                                <i class="fab fa-cc-visa"></i>
+                                <i class="fab fa-cc-mastercard"></i>
+                                <i class="fab fa-cc-paypal"></i>
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Security Info -->
+                    <div class="security-info">
+                        <i class="fas fa-shield-alt"></i>
+                        <div>
+                            <h4>Secure Shopping</h4>
+                            <p>Your personal information is protected with 256-bit SSL encryption</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Need Help -->
+                    <div class="help-card">
+                        <h4><i class="fas fa-question-circle"></i> Need Help?</h4>
+                        <p>Call our medical equipment specialists</p>
+                        <a href="tel:+201234567890" class="phone-link">
+                            <i class="fas fa-phone"></i> +20 123 456 7890
+                        </a>
+                        <p class="hours">Available 24/7</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recently Viewed -->
+    <section class="recently-viewed">
+        <div class="container">
+            <h2 class="section-title">Recently Viewed</h2>
+            <div class="products-grid">
+                <!-- Products will be shown here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer (same as index.html) -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="logo">
+                        <i class="fas fa-hospital-alt"></i>
+                        <span>MediCare Store</span>
+                    </div>
+                    <p>Your trusted partner for quality medical equipment and supplies in Egypt since 2015.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-col">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="products.html">All Products</a></li>
+                        <li><a href="help.html">Help Center</a></li>
+                        <li><a href="#">Track Order</a></li>
+                        <li><a href="#">Return Policy</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h3>Categories</h3>
+                    <ul>
+                        <li><a href="#">Diagnostic Equipment</a></li>
+                        <li><a href="#">Surgical Instruments</a></li>
+                        <li><a href="#">Patient Monitoring</a></li>
+                        <li><a href="#">Personal Protection</a></li>
+                        <li><a href="#">Therapy Equipment</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h3>Contact Us</h3>
+                    <ul class="contact-info">
+                        <li><i class="fas fa-map-marker-alt"></i> 123 Medical Street, Cairo, Egypt</li>
+                        <li><i class="fas fa-phone"></i> +20 123 456 7890</li>
+                        <li><i class="fas fa-envelope"></i> support@medicalstore.com</li>
+                        <li><i class="fas fa-clock"></i> 24/7 Customer Support</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 MediCare Medical Equipment Store. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Prescription Upload Modal -->
+    <div class="modal" id="prescriptionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-medical"></i> Upload Prescription</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>This product requires a valid doctor's prescription. Please upload a clear photo or scan of your prescription.</p>
+                
+                <div class="upload-area">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h4>Drop prescription file here</h4>
+                    <p>or click to browse</p>
+                    <input type="file" accept="image/*,.pdf,.doc,.docx" id="prescriptionFile">
+                </div>
+                
+                <div class="prescription-info">
+                    <h4>Prescription Requirements:</h4>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Must be issued by a licensed physician</li>
+                        <li><i class="fas fa-check"></i> Clearly show patient name and date</li>
+                        <li><i class="fas fa-check"></i> Include doctor's signature and stamp</li>
+                        <li><i class="fas fa-check"></i> Valid within last 6 months</li>
+                    </ul>
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="btn btn-outline cancel-upload">Cancel</button>
+                    <button class="btn btn-primary upload-submit">Upload & Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay"></div>
+
+    <script src="app.js"></script>
+    <script src="cart.js"></script>
+</body>
+</html>
