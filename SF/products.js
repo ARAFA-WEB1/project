@@ -1,379 +1,355 @@
-// Products Page JavaScript
-document.addEventListener('DOMContentLoaded', function() {
-    // Sample product data
-    const products = [
-        {
-            id: 1,
-            name: 'Digital Blood Pressure Monitor',
-            category: 'Monitoring Devices',
-            price: 1299,
-            originalPrice: 1599,
-            rating: 4.5,
-            ratingCount: 124,
-            image: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-            stock: 25,
-            requiresPrescription: false,
-            badge: 'Bestseller'
-        },
-        {
-            id: 2,
-            name: 'Portable Oxygen Concentrator',
-            category: 'Respiratory Care',
-            price: 18500,
-            originalPrice: null,
-            rating: 4,
-            ratingCount: 89,
-            image: 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-            stock: 3,
-            requiresPrescription: true,
-            badge: 'Requires Prescription'
-        },
-        {
-            id: 3,
-            name: 'Infrared Digital Thermometer',
-            category: 'Diagnostic Tools',
-            price: 450,
-            originalPrice: null,
-            rating: 5,
-            ratingCount: 256,
-            image: 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-            stock: 150,
-            requiresPrescription: false,
-            badge: 'New Arrival'
-        },
-        {
-            id: 4,
-            name: 'Electric Adjustable Hospital Bed',
-            category: 'Hospital Furniture',
-            price: 32000,
-            originalPrice: 35000,
-            rating: 4.5,
-            ratingCount: 67,
-            image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-            stock: 8,
-            requiresPrescription: false
-        },
-        {
-            id: 5,
-            name: 'ECG Machine 12-Lead',
-            category: 'Diagnostic Equipment',
-            price: 45000,
-            originalPrice: 50000,
-            rating: 4.8,
-            ratingCount: 45,
-            image: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-            stock: 5,
-            requiresPrescription: false,
-            badge: '-10%'
-        },
-        {
-            id: 6,
-            name: 'Surgical Instrument Set',
-            category: 'Surgical Instruments',
-            price: 8500,
-            originalPrice: null,
-            rating: 4.2,
-            ratingCount: 78,
-            image: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-            stock: 12,
-            requiresPrescription: true
-        },
-        {
-            id: 7,
-            name: 'Portable Ultrasound Scanner',
-            category: 'Diagnostic Equipment',
-            price: 125000,
-            originalPrice: 150000,
-            rating: 4.9,
-            ratingCount: 23,
-            image: 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-            stock: 3,
-            requiresPrescription: false,
-            badge: 'Limited Stock'
-        },
-        {
-            id: 8,
-            name: 'Medical Ventilator ICU',
-            category: 'Respiratory Care',
-            price: 250000,
-            originalPrice: null,
-            rating: 4.7,
-            ratingCount: 34,
-            image: 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-            stock: 2,
-            requiresPrescription: true,
-            badge: 'Requires Prescription'
-        }
-    ];
-
-    const productsGrid = document.getElementById('productsGrid');
-    const productsCount = document.getElementById('productsCount');
-    const sortSelect = document.getElementById('sortBy');
-    const productSearch = document.getElementById('productSearch');
-    const applyFiltersBtn = document.querySelector('.apply-filters');
-    const resetFiltersBtn = document.querySelector('.reset-filters');
-    
-    let filteredProducts = [...products];
-    
-    // Render products
-    function renderProducts(productsToRender) {
-        productsGrid.innerHTML = '';
-        
-        productsToRender.forEach(product => {
-            const productCard = document.createElement('div');
-            productCard.className = 'product-card';
-            
-            let badgeHTML = '';
-            if (product.badge) {
-                const badgeClass = product.badge.includes('Prescription') ? 'prescription' : '';
-                badgeHTML = `<div class="product-badge ${badgeClass}">${product.badge}</div>`;
-            }
-            
-            let priceHTML = `<span class="current-price">EGP ${product.price.toLocaleString()}</span>`;
-            if (product.originalPrice) {
-                priceHTML += `<span class="original-price">EGP ${product.originalPrice.toLocaleString()}</span>`;
-            }
-            
-            let stockHTML = `<i class="fas fa-check-circle"></i> In Stock: ${product.stock} units`;
-            if (product.stock < 5) {
-                stockHTML = `<i class="fas fa-clock"></i> Limited Stock: ${product.stock} units`;
-            }
-            
-            const ratingStars = getRatingStars(product.rating);
-            
-            productCard.innerHTML = `
-                ${badgeHTML}
-                <div class="product-image">
-                    <img src="${product.image}" alt="${product.name}">
-                    <button class="wishlist-btn"><i class="far fa-heart"></i></button>
-                </div>
-                <div class="product-info">
-                    <span class="product-category">${product.category}</span>
-                    <h3 class="product-title">${product.name}</h3>
-                    <div class="product-rating">
-                        ${ratingStars}
-                        <span class="rating-count">(${product.ratingCount})</span>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Medical Products - MediCare Store</title>
+        <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    </head>
+    <body>
+        <!-- Header (same as index.html) -->
+        <header class="header">
+            <div class="container">
+                <nav class="navbar">
+                    <a href="index.html" class="logo">
+                        <i class="fas fa-hospital-alt"></i>
+                        <span>MediCare Store</span>
+                    </a>
+                    
+                    <div class="nav-menu">
+                        <ul class="nav-links">
+                            <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+                            <li><a href="products.html" class="active"><i class="fas fa-box"></i> Products</a></li>
+                            <li><a href="help.html"><i class="fas fa-question-circle"></i> Help</a></li>
+                            <li class="dropdown">
+                                <a href="#"><i class="fas fa-user-md"></i> Categories <i class="fas fa-chevron-down"></i></a>
+                                <div class="dropdown-content">
+                                    <a href="#"><i class="fas fa-heartbeat"></i> Diagnostic Equipment</a>
+                                    <a href="#"><i class="fas fa-cut"></i> Surgical Instruments</a>
+                                    <a href="#"><i class="fas fa-procedures"></i> Patient Monitoring</a>
+                                    <a href="#"><i class="fas fa-shield-alt"></i> Personal Protection</a>
+                                    <a href="#"><i class="fas fa-syringe"></i> Disposable Products</a>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
-                    <div class="product-price">
-                        ${priceHTML}
-                    </div>
-                    <div class="product-stock">
-                        ${stockHTML}
-                    </div>
-                    <div class="product-actions">
-                        <button class="btn btn-outline add-to-cart" data-id="${product.id}">
-                            <i class="fas fa-cart-plus"></i> 
-                            ${product.requiresPrescription ? 'Add Prescription' : 'Add to Cart'}
+                    
+                    <div class="nav-actions">
+                        <a href="cart.html" class="cart-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="cart-count">3</span>
+                        </a>
+                        <div class="user-dropdown">
+                            <button class="user-btn">
+                                <i class="fas fa-user"></i> Mohamed
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-content">
+                                <a href="profile.html"><i class="fas fa-user-circle"></i> My Profile</a>
+                                <a href="#"><i class="fas fa-shopping-bag"></i> Orders</a>
+                                <a href="#"><i class="fas fa-heart"></i> Wishlist</a>
+                                <a href="login.html"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                            </div>
+                        </div>
+                        <button class="mobile-menu-btn">
+                            <i class="fas fa-bars"></i>
                         </button>
-                        <a href="product-detail.html?id=${product.id}" class="btn btn-secondary">View Details</a>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Products Hero -->
+        <section class="page-hero">
+            <div class="container">
+                <div class="page-hero-content">
+                    <h1>Medical Equipment & Supplies</h1>
+                    <p>Browse our extensive catalog of medical products for healthcare professionals and individuals</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Products Section -->
+        <section class="products-page">
+            <div class="container">
+                <div class="products-layout">
+                    <!-- Sidebar Filters -->
+                    <aside class="products-sidebar">
+                        <div class="filter-section">
+                            <h3><i class="fas fa-filter"></i> Filter Products</h3>
+                            
+                            <!-- Search -->
+                            <div class="filter-group">
+                                <h4>Search</h4>
+                                <div class="search-box">
+                                    <input type="text" placeholder="Search products..." id="productSearch">
+                                    <button><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                            
+                            <!-- Categories -->
+                            <div class="filter-group">
+                                <h4>Categories</h4>
+                                <div class="filter-options">
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox" checked>
+                                        <span>Diagnostic Equipment</span>
+                                        <span class="count">45</span>
+                                    </label>
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox">
+                                        <span>Surgical Instruments</span>
+                                        <span class="count">28</span>
+                                    </label>
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox">
+                                        <span>Patient Monitoring</span>
+                                        <span class="count">32</span>
+                                    </label>
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox">
+                                        <span>Personal Protection</span>
+                                        <span class="count">67</span>
+                                    </label>
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox">
+                                        <span>Therapy Equipment</span>
+                                        <span class="count">23</span>
+                                    </label>
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox">
+                                        <span>Disposable Products</span>
+                                        <span class="count">89</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Price Range -->
+                            <div class="filter-group">
+                                <h4>Price Range (EGP)</h4>
+                                <div class="price-range">
+                                    <div class="price-inputs">
+                                        <input type="number" placeholder="Min" id="minPrice" value="0">
+                                        <span>to</span>
+                                        <input type="number" placeholder="Max" id="maxPrice" value="50000">
+                                    </div>
+                                    <div class="slider-container">
+                                        <div class="slider-track"></div>
+                                        <input type="range" min="0" max="100000" value="0" class="range-slider" id="minSlider">
+                                        <input type="range" min="0" max="100000" value="50000" class="range-slider" id="maxSlider">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Brand -->
+                            <div class="filter-group">
+                                <h4>Brand</h4>
+                                <div class="filter-options">
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox">
+                                        <span>Medtronic</span>
+                                    </label>
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox">
+                                        <span>Philips</span>
+                                    </label>
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox" checked>
+                                        <span>GE Healthcare</span>
+                                    </label>
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox">
+                                        <span>Siemens</span>
+                                    </label>
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox">
+                                        <span>Omron</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Stock Status -->
+                            <div class="filter-group">
+                                <h4>Stock Status</h4>
+                                <div class="filter-options">
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox" checked>
+                                        <span>In Stock</span>
+                                    </label>
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox">
+                                        <span>Out of Stock</span>
+                                    </label>
+                                    <label class="filter-checkbox">
+                                        <input type="checkbox">
+                                        <span>Prescription Required</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <button class="btn btn-primary apply-filters">Apply Filters</button>
+                            <button class="btn btn-outline reset-filters">Reset All</button>
+                        </div>
+                        
+                        <!-- Special Offers -->
+                        <div class="special-offers">
+                            <h3><i class="fas fa-percentage"></i> Special Offers</h3>
+                            <div class="offer-card">
+                                <div class="offer-badge">-25%</div>
+                                <h4>Blood Glucose Monitors</h4>
+                                <p>Get 25% off on selected models</p>
+                                <a href="#" class="btn btn-sm btn-primary">Shop Now</a>
+                            </div>
+                            <div class="offer-card">
+                                <div class="offer-badge">Free Shipping</div>
+                                <h4>Orders over EGP 5,000</h4>
+                                <p>Free delivery across Egypt</p>
+                                <a href="#" class="btn btn-sm btn-primary">Learn More</a>
+                            </div>
+                        </div>
+                    </aside>
+                    
+                    <!-- Main Products Area -->
+                    <main class="products-main">
+                        <!-- Products Header -->
+                        <div class="products-header">
+                            <div class="products-info">
+                                <h2>Medical Products</h2>
+                                <p>Showing <span id="productsCount">48</span> products</p>
+                            </div>
+                            <div class="products-sort">
+                                <label for="sortBy">Sort by:</label>
+                                <select id="sortBy">
+                                    <option value="default">Default</option>
+                                    <option value="price-low">Price: Low to High</option>
+                                    <option value="price-high">Price: High to Low</option>
+                                    <option value="name">Name A-Z</option>
+                                    <option value="rating">Highest Rated</option>
+                                    <option value="newest">Newest First</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Products Grid -->
+                        <div class="products-grid" id="productsGrid">
+                            <!-- Products will be loaded here by JavaScript -->
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="pagination">
+                            <button class="page-btn" disabled><i class="fas fa-chevron-left"></i> Previous</button>
+                            <div class="page-numbers">
+                                <button class="page-number active">1</button>
+                                <button class="page-number">2</button>
+                                <button class="page-number">3</button>
+                                <button class="page-number">4</button>
+                                <span>...</span>
+                                <button class="page-number">10</button>
+                            </div>
+                            <button class="page-btn">Next <i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </section>
+        
+
+        <!-- Newsletter & Footer (same as index.html) -->
+        <section class="newsletter">
+            <div class="container">
+                <div class="newsletter-content">
+                    <h2>Stay Updated with Medical Innovations</h2>
+                    <p>Subscribe to get exclusive offers, new product alerts, and medical equipment guides</p>
+                    <form class="newsletter-form">
+                        <input type="email" placeholder="Enter your email address" required>
+                        <button type="submit" class="btn btn-primary">Subscribe</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-col">
+                        <div class="logo">
+                            <i class="fas fa-hospital-alt"></i>
+                            <span>MediCare Store</span>
+                        </div>
+                        <p>Your trusted partner for quality medical equipment and supplies in Egypt since 2015.</p>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-facebook"></i></a>
+                            <a href="#"><i class="fab fa-twitter"></i></a>
+                            <a href="#"><i class="fab fa-instagram"></i></a>
+                            <a href="#"><i class="fab fa-linkedin"></i></a>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-col">
+                        <h3>Quick Links</h3>
+                        <ul>
+                            <li><a href="index.html">Home</a></li>
+                            <li><a href="products.html">All Products</a></li>
+                            <li><a href="help.html">Help Center</a></li>
+                            <li><a href="#">Track Order</a></li>
+                            <li><a href="#">Return Policy</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-col">
+                        <h3>Categories</h3>
+                        <ul>
+                            <li><a href="#">Diagnostic Equipment</a></li>
+                            <li><a href="#">Surgical Instruments</a></li>
+                            <li><a href="#">Patient Monitoring</a></li>
+                            <li><a href="#">Personal Protection</a></li>
+                            <li><a href="#">Therapy Equipment</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-col">
+                        <h3>Contact Us</h3>
+                        <ul class="contact-info">
+                            <li><i class="fas fa-map-marker-alt"></i> 123 Medical Street, Cairo, Egypt</li>
+                            <li><i class="fas fa-phone"></i> +20 123 456 7890</li>
+                            <li><i class="fas fa-envelope"></i> support@medicalstore.com</li>
+                            <li><i class="fas fa-clock"></i> 24/7 Customer Support</li>
+                        </ul>
                     </div>
                 </div>
-            `;
-            
-            productsGrid.appendChild(productCard);
-        });
-        
-        // Update count
-        productsCount.textContent = productsToRender.length;
-        
-        // Add event listeners to new buttons
-        document.querySelectorAll('.add-to-cart').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const productId = parseInt(this.dataset.id);
-                const product = products.find(p => p.id === productId);
                 
-                if (product.requiresPrescription) {
-                    // Show prescription modal
-                    const modal = document.getElementById('prescriptionModal');
-                    if (modal) {
-                        modal.classList.add('active');
-                        document.querySelector('.modal-overlay').classList.add('active');
-                    }
-                } else {
-                    // Add to cart directly
-                    const event = new CustomEvent('addToCart', { detail: { productId } });
-                    window.dispatchEvent(event);
-                }
-            });
-        });
+                <div class="footer-bottom">
+                    <p>&copy; 2025 MediCare Medical Equipment Store. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Cart Sidebar (same as index.html) -->
+        <div class="cart-sidebar">
+            <div class="cart-header">
+                <h3><i class="fas fa-shopping-cart"></i> Shopping Cart</h3>
+                <button class="close-cart"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="cart-items">
+                <!-- Cart items will be added here by JavaScript -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>Total:</span>
+                    <span class="total-price">EGP 0.00</span>
+                </div>
+                <div class="cart-actions">
+                    <a href="cart.html" class="btn btn-outline">View Cart</a>
+                    <a href="checkout.html" class="btn btn-primary">Checkout</a>
+                </div>
+            </div>
+        </div>
+        <div class="cart-overlay"></div>
+
+        <script src="app.js"></script>
+        <script src="products.js"></script>
         
-        // Wishlist buttons
-        document.querySelectorAll('.wishlist-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const icon = this.querySelector('i');
-                icon.classList.toggle('far');
-                icon.classList.toggle('fas');
-                icon.classList.toggle('text-danger');
-                
-                showNotification('Added to wishlist!', 'success');
-            });
-        });
-    }
-    
-    // Get rating stars HTML
-    function getRatingStars(rating) {
-        let stars = '';
-        const fullStars = Math.floor(rating);
-        const hasHalfStar = rating % 1 >= 0.5;
-        
-        for (let i = 1; i <= 5; i++) {
-            if (i <= fullStars) {
-                stars += '<i class="fas fa-star"></i>';
-            } else if (i === fullStars + 1 && hasHalfStar) {
-                stars += '<i class="fas fa-star-half-alt"></i>';
-            } else {
-                stars += '<i class="far fa-star"></i>';
-            }
-        }
-        
-        return stars;
-    }
-    
-    // Filter products
-    function filterProducts() {
-        const searchTerm = productSearch.value.toLowerCase();
-        const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
-        const maxPrice = parseFloat(document.getElementById('maxPrice').value) || Infinity;
-        const selectedCategories = Array.from(document.querySelectorAll('.filter-checkbox input[type="checkbox"]:checked'))
-            .map(cb => cb.nextElementSibling.textContent);
-        
-        filteredProducts = products.filter(product => {
-            // Search filter
-            const matchesSearch = product.name.toLowerCase().includes(searchTerm) ||
-                                product.category.toLowerCase().includes(searchTerm);
-            
-            // Price filter
-            const matchesPrice = product.price >= minPrice && product.price <= maxPrice;
-            
-            // Category filter
-            const matchesCategory = selectedCategories.length === 0 || 
-                                  selectedCategories.includes(product.category);
-            
-            return matchesSearch && matchesPrice && matchesCategory;
-        });
-        
-        // Apply sorting
-        sortProducts();
-    }
-    
-    // Sort products
-    function sortProducts() {
-        const sortValue = sortSelect.value;
-        
-        switch(sortValue) {
-            case 'price-low':
-                filteredProducts.sort((a, b) => a.price - b.price);
-                break;
-            case 'price-high':
-                filteredProducts.sort((a, b) => b.price - a.price);
-                break;
-            case 'name':
-                filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
-                break;
-            case 'rating':
-                filteredProducts.sort((a, b) => b.rating - a.rating);
-                break;
-            case 'newest':
-                // Assuming newer products have higher IDs
-                filteredProducts.sort((a, b) => b.id - a.id);
-                break;
-            default:
-                // Default sorting
-                break;
-        }
-        
-        renderProducts(filteredProducts);
-    }
-    
-    // Initialize price slider
-    function initPriceSlider() {
-        const minSlider = document.getElementById('minSlider');
-        const maxSlider = document.getElementById('maxSlider');
-        const minPrice = document.getElementById('minPrice');
-        const maxPrice = document.getElementById('maxPrice');
-        
-        function updatePriceInputs() {
-            minPrice.value = minSlider.value;
-            maxPrice.value = maxSlider.value;
-        }
-        
-        function updateSliders() {
-            minSlider.value = minPrice.value;
-            maxSlider.value = maxPrice.value;
-        }
-        
-        minSlider.addEventListener('input', updatePriceInputs);
-        maxSlider.addEventListener('input', updatePriceInputs);
-        minPrice.addEventListener('input', updateSliders);
-        maxPrice.addEventListener('input', updateSliders);
-        
-        updatePriceInputs();
-    }
-    
-    // Initialize
-    function init() {
-        renderProducts(products);
-        initPriceSlider();
-        
-        // Event listeners
-        sortSelect.addEventListener('change', sortProducts);
-        productSearch.addEventListener('input', filterProducts);
-        
-        if (applyFiltersBtn) {
-            applyFiltersBtn.addEventListener('click', filterProducts);
-        }
-        
-        if (resetFiltersBtn) {
-            resetFiltersBtn.addEventListener('click', function() {
-                productSearch.value = '';
-                document.getElementById('minPrice').value = 0;
-                document.getElementById('maxPrice').value = 50000;
-                document.querySelectorAll('.filter-checkbox input').forEach(cb => cb.checked = false);
-                sortSelect.value = 'default';
-                filterProducts();
-            });
-        }
-        
-        // Listen for addToCart event from app.js
-        window.addEventListener('addToCart', function(e) {
-            const productId = e.detail.productId;
-            // This will be handled by app.js
-        });
-    }
-    
-    // Add custom CSS for products page
-    const style = document.createElement('style');
-    style.textContent = `
-        .text-danger {
-            color: #dc3545 !important;
-        }
-        
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.9rem;
-        }
-        
-        .nav-menu.active {
-            display: flex !important;
-            flex-direction: column;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            padding: 1rem;
-            box-shadow: var(--shadow);
-            z-index: 1000;
-        }
-        
-        .nav-menu.active .nav-links {
-            flex-direction: column;
-            margin-left: 0;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Start the app
-    init();
-});
+    </body>
+    </html>
