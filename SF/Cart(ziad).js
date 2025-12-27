@@ -232,4 +232,41 @@ document.addEventListener('DOMContentLoaded', function () {
         const overlay = document.querySelector('.modal-overlay');
         const fileInput = document.getElementById('prescriptionFile');
 
-        document.querySelector('.upload-
+        document.querySelector('.upload-submit').onclick = () => {
+            if (!fileInput.files.length) {
+                showNotification('Select a file first', 'error');
+                return;
+            }
+
+            cartItems[activePrescriptionIndex].prescriptionUploaded = true;
+            saveCart();
+            renderCartItems();
+
+            modal.classList.remove('active');
+            overlay.classList.remove('active');
+
+            showNotification('Prescription uploaded successfully', 'success');
+        };
+
+        overlay.onclick = () => {
+            modal.classList.remove('active');
+            overlay.classList.remove('active');
+        };
+    }
+
+    /* =======================
+       INIT
+    ======================== */
+    loadCart();
+    renderCartItems();
+    initPrescriptionModal();
+
+    applyPromoBtn?.addEventListener('click', applyPromoCode);
+    checkoutBtn?.addEventListener('click', proceedToCheckout);
+    clearCartBtn?.addEventListener('click', () => {
+        cartItems = [];
+        saveCart();
+        renderCartItems();
+    });
+
+});
