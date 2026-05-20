@@ -1,0 +1,262 @@
+// script.js — Nova Terminal OS: Advanced Command System, Virtual FS, Glass UI
+// Premium interactive terminal with file system, widgets, cinematic animations
+
+(function(){
+    // ---- DOM elements ----
+    const homePage = document.getElementById('homePage');
+    const terminalOS = document.getElementById('terminalOS');
+    const launchBtn = document.getElementById('launchBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const commandInput = document.getElementById('commandInput');
+    const outputArea = document.getElementById('outputArea');
+    const liveClockSpan = document.getElementById('liveClock');
+    const exitHomeBtn = document.getElementById('exitToHost') || document.getElementById('exitToHome');
+    
+    // ---- STATE ----
+    let currentDirectory = '/home/nova';
+    let commandHistory = [];
+    let historyIndex = -1;
+    let fileSystem = {};
+    let isDragging = false;
+    
+    // Virtual file system init
+    function initFS() {
+        fileSystem = {
+            '/': { type: 'dir', children: ['home'], content: null },
+            '/home': { type: 'dir', children: ['nova', 'documents'], content: null },
+            '/home/nova': { type: 'dir', children: ['welcome.txt', 'config.json', 'projects'], content: null },
+            '/home/nova/welcome.txt': { type: 'file', content: 'Welcome to Nova OS — premium terminal experience.', size: '42B' },
+            '/home/nova/config.json': { type: 'file', content: '{ "theme": "aurora", "version": "2.0" }', size: '38B' },
+            '/home/nova/projects': { type: 'dir', children: [], content: null },
+            '/home/documents': { type: 'dir', children: ['notes.txt'], content: null },
+            '/home/documents/notes.txt': { type: 'file', content: 'Write your ideas here.', size: '20B' }
+        };
+    }
+    initFS();
+    
+    // Helper: resolve path
+    function resolvePath(path) {
+        if(path.startsWith('/')) return path;
+        let base = currentDirectory;
+        if(path === '..') return base.split('/').slice(0, -1).join('/') || '/';
+        if(path === '.') return base;
+        return base + (base.endsWith('/') ? '' : '/') + path;
+    }
+    
+    // generate fancy output blocks
+    function addOutput(content, type = 'normal') {
+        const outputDiv = document.createElement('div');
+        outputDiv.className = `glass-card fade-in`;
+        outputDiv.style.animation = 'fadeInUp 0.2s ease';
+        if(type === 'error') outputDiv.style.borderLeftColor = '#ff5c8a';
+        else if(type === 'success') outputDiv.style.borderLeftColor = '#6effb0';
+        else outputDiv.style.borderLeftColor = '#c084fc';
+        if(typeof content === 'string') outputDiv.innerHTML = content;
+        else outputDiv.appendChild(content);
+        outputArea.appendChild(outputDiv);
+        outputArea.scrollTop = outputArea.scrollHeight;
+    }
+    
+    function clearOutput() { outputArea.innerHTML = ''; }
+    
+    // pretty printer for ls
+    function listDirectory(path) {
+        const node = fileSystem[path];
+        if(!node || node.type !== 'dir') return addOutput(`<i class="fas fa-folder-open"></i> Directory not found: ${path}`, 'error');
+        let items = node.children.map(c => {
+            const full = path === '/' ? `/${c}` : `${path}/${c}`;
+            const isDir = fileSystem[full]?.type === 'dir';
+            return `<span style="color:${isDir ? '#6ee7ff' : '#ffb86b'}">${isDir ? '📁 ' : '📄 '}${c}</span>`;
+        }).join(' &nbsp;&nbsp; ');
+        addOutput(`<div><i class="fas fa-list"></i> ${path}<br>${items || '(empty)'}</div>`);
+    }
+    
+    // command parsing
+    const commands = {
+        help: () => addOutput(`✨ Available commands: <br> system: help, clear, pwd, ls, cd, mkdir, touch, rm, cat, tree <br> info: date, time, whoami, sysinfo, neofetch <br> fun: joke, matrix, ai <br> apps: calc, notes, files, settings, music`),
+        clear: () => clearOutput(),
+        pwd: () => addOutput(currentDirectory),
+        ls: (args) => listDirectory(currentDirectory),
+        cd: (args) => {
+            if(!args[0]) return;
+            let newPath = resolvePath(args[0]);
+            if(fileSystem[newPath] && fileSystem[newPath].type === 'dir') currentDirectory = newPath;
+            else addOutput(`cd: no such directory: ${args[0]}`, 'error');
+        },
+        mkdir: (args) => {
+            let newDir = resolvePath(args[0]);
+            if(fileSystem[newDir]) addOutput('dir exists', 'error');
+            else { fileSystem[newDir] = { type: 'dir', children: [] }; addOutput(`✅ created ${args[0]}`, 'success'); }
+        },
+        touch: (args) => {
+            let filePath = resolvePath(args[0]);
+            if(fileSystem[filePath]) addOutput('file exists');
+            else { fileSystem[filePath] = { type: 'file', content: '' }; addOutput(`📄 new file: ${args[0]}`, 'success'); }
+        },
+        rm: (args) => {
+            let target = resolvePath(args[0]);
+            if(fileSystem[target]) { delete fileSystem[target]; addOutput(`🗑️ removed ${args[0]}`, 'success'); }
+            else addOutput('not found', 'error');
+        },
+        cat: (args) => {
+            let target = resolvePath(args[0]);
+            if(fileSystem[target]?.type === 'file') addOutput(`<i class="fas fa-file-alt"></i> ${fileSystem[target].content || '(empty)'}`);
+            else addOutput('file not found', 'error');
+        },
+        date: () => addOutput(new Date().toDateString()),
+        time: () => addOutput(new Date().toLocaleTimeString()),
+        whoami: () => addOutput('nova_user@aurora'),
+        sysinfo: () => addOutput(`<i class="fas fa-chart-line"></i> Nova OS • Kernel 6.1 • Architecture: x64_glass • Uptime: 4h 21m`),
+        neofetch: () => addOutput(`<pre style="font-family:monospace">          ./+o+-       nova@terminal<br>      yyyyy- -yyyyyy+      OS: Nova Terminal 2.0<br>   ://+//////-yyyyyyo      Shell: Zsh+AI<br>   ++++ : //+ /////       CPU: M2 Ultra (12%)<br>   \`+eeeeeee/ +sssooo     Memory: 3.2GB / 16GB</pre>`),
+        joke: () => addOutput(`⚡ Why do programmers prefer dark mode? Because light attracts bugs! 😄`),
+        matrix: () => addOutput(`<div class="matrix-glow" style="color:#0f0;">01001110 01101111 01110110 01100001</div>`),
+        ai: () => addOutput(`🤖 Nova AI: I am an immersive simulation. Type 'help' to explore premium tools.`),
+        calc: () => { document.getElementById('widgetCalculator').classList.remove('hidden'); },
+        notes: () => { document.getElementById('widgetNotes').classList.remove('hidden'); },
+        files: () => { renderExplorer(); document.getElementById('widgetExplorer').classList.remove('hidden'); },
+        settings: () => { document.getElementById('widgetSettings').classList.remove('hidden'); },
+        music: () => { document.getElementById('widgetMusic').classList.remove('hidden'); },
+    };
+    
+    function renderExplorer() {
+        const explorerDiv = document.getElementById('explorerContent');
+        explorerDiv.innerHTML = `<div><strong>Virtual FS: ${currentDirectory}</strong><br>${Object.keys(fileSystem).map(f => `<div>📁 ${f}</div>`).join('')}</div>`;
+    }
+    
+    function processCommand(cmdLine) {
+        if(!cmdLine.trim()) return;
+        commandHistory.push(cmdLine);
+        historyIndex = commandHistory.length;
+        const parts = cmdLine.trim().split(/\s+/);
+        const cmd = parts[0].toLowerCase();
+        const args = parts.slice(1);
+        if(commands[cmd]) commands[cmd](args);
+        else addOutput(`command not found: ${cmd}. Try 'help'`, 'error');
+    }
+    
+    // AutoComplete basic
+    function autocomplete(input) {
+        const cmdList = Object.keys(commands);
+        const match = cmdList.find(c => c.startsWith(input.toLowerCase()));
+        if(match) commandInput.value = match;
+    }
+    
+    // keyboard shortcuts
+    commandInput.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter') {
+            const val = commandInput.value;
+            addOutput(`<span class="input-prompt">❯❯</span> ${val}`);
+            processCommand(val);
+            commandInput.value = '';
+        } else if(e.key === 'ArrowUp') {
+            e.preventDefault();
+            if(historyIndex > 0) historyIndex--;
+            if(commandHistory[historyIndex]) commandInput.value = commandHistory[historyIndex];
+        } else if(e.key === 'ArrowDown') {
+            if(historyIndex < commandHistory.length-1) historyIndex++;
+            else historyIndex = commandHistory.length;
+            commandInput.value = commandHistory[historyIndex] || '';
+        } else if(e.key === 'Tab') {
+            e.preventDefault();
+            autocomplete(commandInput.value);
+        }
+    });
+    
+    // Launch animation & transition
+    function startCinematic() {
+        loadingOverlay.classList.remove('hidden');
+        setTimeout(() => {
+            loadingOverlay.classList.add('hidden');
+            homePage.classList.add('hidden');
+            terminalOS.classList.remove('hidden');
+            addOutput('<i class="fas fa-sync-alt"></i> System ready — Nova Terminal v2.0<br>✨ Type <span class="cmd-highlight">help</span> to begin');
+            startWidgetUpdater();
+        }, 1800);
+    }
+    launchBtn.addEventListener('click', startCinematic);
+    if(exitHomeBtn) exitHomeBtn.addEventListener('click', () => {
+        terminalOS.classList.add('hidden');
+        homePage.classList.remove('hidden');
+    });
+    document.getElementById('closeTermBtn')?.addEventListener('click', () => terminalOS.classList.add('hidden'));
+    
+    // Clock, stats fakes
+    function startWidgetUpdater() {
+        setInterval(() => {
+            if(!terminalOS.classList.contains('hidden')) {
+                const now = new Date();
+                liveClockSpan.innerText = now.toLocaleTimeString();
+                document.getElementById('cpuStat').innerHTML = `CPU: ${Math.floor(Math.random() * 20 + 5)}%`;
+                document.getElementById('ramStat').innerHTML = `RAM: ${(Math.random() * 3 + 1.2).toFixed(1)}GB`;
+            }
+        }, 2000);
+    }
+    
+    // Popup draggable & close all
+    document.querySelectorAll('.close-popup').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.target.closest('.glass-popup').classList.add('hidden');
+        });
+    });
+    // calculator mock
+    const calcDisplay = document.getElementById('calcDisplay');
+    if(calcDisplay) {
+        const btns = ['7','8','9','/','4','5','6','*','1','2','3','-','0','C','=','+'];
+        const grid = document.createElement('div'); grid.style.display='grid'; grid.style.gridTemplateColumns='repeat(4,1fr)'; grid.style.gap='8px';
+        let expr='';
+        btns.forEach(b => {
+            const btn = document.createElement('button'); btn.innerText=b; btn.style.background='rgba(255,255,255,0.1)'; btn.style.border='none'; btn.style.borderRadius='12px'; btn.style.padding='12px';
+            btn.onclick=()=>{
+                if(b==='C') { expr=''; calcDisplay.innerText='0'; }
+                else if(b==='=') { try { expr=eval(expr).toString(); calcDisplay.innerText=expr; } catch { calcDisplay.innerText='Error'; expr=''; } }
+                else { expr+=b; calcDisplay.innerText=expr; }
+            };
+            grid.appendChild(btn);
+        });
+        document.querySelector('#widgetCalculator .popup-content').appendChild(grid);
+    }
+    // notes localstorage
+    const notesText = document.getElementById('notesArea');
+    if(notesText) {
+        if(localStorage.getItem('nova_notes')) notesText.value = localStorage.getItem('nova_notes');
+        notesText.addEventListener('input', () => localStorage.setItem('nova_notes', notesText.value));
+    }
+    // theme toggle simulation
+    const themeToggle = document.getElementById('themeToggle');
+    if(themeToggle) themeToggle.addEventListener('change', () => alert('Theme switching feels premium!'));
+    
+    // dock open windows
+    document.querySelectorAll('.dock-icon[data-window]').forEach(icon => {
+        icon.addEventListener('click', () => {
+            const winId = icon.getAttribute('data-window');
+            if(winId === 'terminal') document.getElementById('mainTerminal').classList.remove('hidden');
+            else if(winId === 'explorer') { renderExplorer(); document.getElementById('widgetExplorer').classList.remove('hidden'); }
+            else if(winId === 'calculator') document.getElementById('widgetCalculator').classList.remove('hidden');
+            else if(winId === 'notes') document.getElementById('widgetNotes').classList.remove('hidden');
+            else if(winId === 'music') document.getElementById('widgetMusic').classList.remove('hidden');
+            else if(winId === 'settings') document.getElementById('widgetSettings').classList.remove('hidden');
+        });
+    });
+    // floating terminal drag (basic)
+    const termHeader = document.getElementById('dragHandle');
+    let offsetX, offsetY, isDrag = false;
+    termHeader.addEventListener('mousedown', (e) => { isDrag=true; offsetX = e.clientX - document.getElementById('mainTerminal').offsetLeft; offsetY = e.clientY - document.getElementById('mainTerminal').offsetTop; });
+    window.addEventListener('mousemove', (e) => { if(isDrag) { document.getElementById('mainTerminal').style.left = (e.clientX - offsetX) + 'px'; document.getElementById('mainTerminal').style.top = (e.clientY - offsetY) + 'px'; document.getElementById('mainTerminal').style.position = 'absolute'; } });
+    window.addEventListener('mouseup', () => isDrag = false);
+    
+    // particles for homepage
+    const canvas = document.getElementById('particleCanvas');
+    if(canvas) {
+        let ctx = canvas.getContext('2d');
+        let particles = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+        for(let i=0;i<70;i++) particles.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, radius:Math.random()*2+1, alpha:Math.random()*0.6, vx:(Math.random()-0.5)*0.4, vy:(Math.random()-0.5)*0.2});
+        function drawParticles() { if(!canvas) return; ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,p.radius,0,Math.PI*2); ctx.fillStyle=`rgba(180,130,255,${p.alpha})`; ctx.fill(); p.x+=p.vx; p.y+=p.vy; if(p.x<0) p.x=canvas.width; if(p.x>canvas.width) p.x=0; if(p.y<0) p.y=canvas.height; if(p.y>canvas.height) p.y=0; }); requestAnimationFrame(drawParticles); }
+        drawParticles();
+    }
+    // insert missing animation keyframes
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = `@keyframes fadeInUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } } .fade-in { animation: fadeInUp 0.2s ease; }`;
+    document.head.appendChild(styleSheet);
+})();
